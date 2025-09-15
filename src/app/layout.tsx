@@ -17,10 +17,6 @@ export const metadata: Metadata = {
   description:
     "희귀질환 환자·보호자 기록에서 정신 상태와 SDoH를 LLM으로 자동 추출·분석하는 서비스",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
-  ],
 };
 
 export const viewport: Viewport = {
@@ -28,6 +24,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   maximumScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 };
 
 export default function RootLayout({
