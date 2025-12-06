@@ -1,9 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Navbar } from "@/components/navbar";
-import { Toaster } from "@/components/ui/sonner";
-import LayoutContent from "@/components/common/layout-content";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({
@@ -38,24 +35,7 @@ export default function RootLayout({
       className={`h-full ${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-dvh flex flex-col">
-        <div
-          className="sticky top-0 z-50 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
-          style={{ paddingTop: "env(safe-area-inset-top)" }}
-        >
-          <Navbar />
-        </div>
-
-        <LayoutContent>{children}</LayoutContent>
-
-        <div id="portal-root" />
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            classNames: { description: "text-xs !text-black leading-relaxed" },
-          }}
-        />
-      </body>
+      <body className="min-h-dvh flex flex-col">{children} </body>
     </html>
   );
 }
