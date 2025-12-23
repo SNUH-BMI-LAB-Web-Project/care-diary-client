@@ -18,6 +18,10 @@ export default function DiaryWritePage() {
   const [content, setContent] = useState("");
   const [reflection1, setReflection1] = useState(5);
   const [reflection2, setReflection2] = useState(5);
+  const [reflection3, setReflection3] = useState(5);
+  const [reflection4, setReflection4] = useState(5);
+  const [reflection5, setReflection5] = useState(5);
+  const [reflection6, setReflection6] = useState(5);
 
   const handleNext = () => {
     if (step === "write") {
@@ -99,6 +103,26 @@ export default function DiaryWritePage() {
                     question: REFLECTION_QUESTIONS[1],
                     value: reflection2,
                     onChange: setReflection2,
+                  },
+                  {
+                    question: REFLECTION_QUESTIONS[2],
+                    value: reflection3,
+                    onChange: setReflection3,
+                  },
+                  {
+                    question: REFLECTION_QUESTIONS[3],
+                    value: reflection4,
+                    onChange: setReflection4,
+                  },
+                  {
+                    question: REFLECTION_QUESTIONS[4],
+                    value: reflection5,
+                    onChange: setReflection5,
+                  },
+                  {
+                    question: REFLECTION_QUESTIONS[5],
+                    value: reflection6,
+                    onChange: setReflection6,
                   },
                 ]}
               />
