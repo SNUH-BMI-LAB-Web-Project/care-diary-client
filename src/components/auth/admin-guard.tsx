@@ -5,7 +5,7 @@ import type React from "react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { UserRole } from "@/lib/constants";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -14,15 +14,24 @@ interface AdminGuardProps {
 export function AdminGuard({ children }: AdminGuardProps) {
   const { role } = useCurrentUser();
   const router = useRouter();
+  const [isChecking, setIsChecking] = useState(true);
 
   useEffect(() => {
+    setIsChecking(false);
+
     if (role !== UserRole.ADMIN) {
-      // Admin이 아니면 홈으로 리다이렉트
       router.replace("/home");
     }
   }, [role, router]);
 
-  // Admin이 아니면 아무것도 렌더링하지 않음
+  if (isChecking) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
+        <div className="text-muted-foreground">로딩 중...</div>
+      </div>
+    );
+  }
+
   if (role !== UserRole.ADMIN) {
     return null;
   }
