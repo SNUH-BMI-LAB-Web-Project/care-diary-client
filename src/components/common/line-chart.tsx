@@ -22,16 +22,12 @@ interface LineChartProps {
   title?: string;
 }
 
-export function LineChart({
-  data,
-  color = "hsl(var(--primary))",
-  title,
-}: LineChartProps) {
+export function LineChart({ data, color = "#3b82f6", title }: LineChartProps) {
   const isEmpty = !data || data.length === 0;
 
   return (
     <div className="rounded-sm border bg-card p-6">
-      {title && <h3 className="mb-4 text-lg font-semibold">{title}</h3>}
+      {title && <h3 className="mb-10 text-lg font-semibold">{title}</h3>}
 
       {isEmpty ? (
         <div className="flex h-[300px] items-center justify-center text-sm text-muted-foreground">
@@ -43,7 +39,7 @@ export function LineChart({
             data={data}
             margin={{ top: 5, right: 10, left: 0, bottom: 5 }}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="session"
               label={{
@@ -51,8 +47,8 @@ export function LineChart({
                 position: "insideBottom",
                 offset: -5,
               }}
-              tick={{ fill: "hsl(var(--muted-foreground))" }}
-              stroke="hsl(var(--border))"
+              tick={{ fill: "#6b7280" }}
+              stroke="#e5e7eb"
             />
             <YAxis
               label={{
@@ -60,14 +56,14 @@ export function LineChart({
                 angle: -90,
                 position: "insideLeft",
               }}
-              tick={{ fill: "hsl(var(--muted-foreground))" }}
-              stroke="hsl(var(--border))"
+              tick={{ fill: "#6b7280" }}
+              stroke="#e5e7eb"
               domain={[0, 100]}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(var(--card))",
-                border: "1px solid hsl(var(--border))",
+                backgroundColor: "#ffffff",
+                border: "1px solid #e5e7eb",
                 borderRadius: "4px",
               }}
             />
@@ -75,9 +71,16 @@ export function LineChart({
               type="monotone"
               dataKey="score"
               stroke={color}
-              strokeWidth={2}
-              dot={{ r: 4 }}
-              activeDot={{ r: 6 }}
+              strokeWidth={3}
+              dot={{ r: 5, fill: color, strokeWidth: 2, stroke: "#ffffff" }}
+              activeDot={{
+                r: 7,
+                fill: color,
+                strokeWidth: 2,
+                stroke: "#ffffff",
+              }}
+              connectNulls
+              isAnimationActive={false}
             />
           </RechartsLineChart>
         </ResponsiveContainer>
