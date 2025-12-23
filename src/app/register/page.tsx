@@ -12,39 +12,34 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { Gender, GENDER_LABELS, UserRole } from "@/lib/constants";
 
-type FormData = {
-  // 필수 입력
-  name: string;
-  email: string;
-  gender: Gender;
-  birth: string;
-  address: string;
-  role: UserRole;
-
-  // 선택 입력
-  mainDiagnosis: string;
-  education: string;
-  historyDiagnosis: string;
-  historyDate: string;
-  historyHospital: string;
-  mainSymptoms: string;
-  currentHospital: string;
-  currentResidence: string;
-};
+import {
+  Gender,
+  GENDER_LABELS,
+  UserRole,
+  DisabilitySeverity,
+  DisabilityStatus,
+  MedicalCoverage,
+  SocialWelfareService,
+  MEDICAL_COVERAGE_LABELS,
+  SOCIAL_WELFARE_LABELS,
+} from "@/lib/constants";
+import { RegisterFormData } from "@/lib/types";
 
 export default function RegisterPage() {
   const router = useRouter();
   const socialProvider = "google";
 
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<RegisterFormData>({
     name: "홍길동",
     email: "hong@example.com",
     gender: Gender.MALE,
     birth: "",
     address: "",
     role: UserRole.USER,
+
+    religion: "",
+    educationJob: "",
 
     mainDiagnosis: "",
     education: "",
@@ -54,6 +49,18 @@ export default function RegisterPage() {
     mainSymptoms: "",
     currentHospital: "",
     currentResidence: "",
+
+    medicalCoverage: "",
+
+    specialCaseRegistered: false,
+    specialCaseRegisteredDate: "",
+
+    disabilityRegistered: false,
+    disabilityStatus: "NOT_REGISTERED",
+    disabilityType: "",
+    disabilitySeverity: "",
+
+    socialWelfareServices: [],
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -78,20 +85,32 @@ export default function RegisterPage() {
 
   const isAdmin = formData.role === UserRole.ADMIN;
 
+  const toggleSocialService = (key: SocialWelfareService) => {
+    setFormData((prev) => {
+      const exists = prev.socialWelfareServices.includes(key);
+      return {
+        ...prev,
+        socialWelfareServices: exists
+          ? prev.socialWelfareServices.filter((v) => v !== key)
+          : [...prev.socialWelfareServices, key],
+      };
+    });
+  };
+
   return (
     <div className="min-h-screen bg-secondary px-4 py-10 flex justify-center">
       <div className="w-full max-w-3xl space-y-6">
         <div>
           <h1 className="text-3xl font-bold">회원가입</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            돌봄일기를 시작하기 위해 정보를 입력해주세요 😊
+            돌봄일기를 시작하기 위해 정보를 입력해주세요
           </p>
         </div>
 
         <Card className="border-0 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4">
             <div>
-              <p className="text-sm font-medium">기본 정보 및 부가 정보 입력</p>
+              <p className="text-sm font-medium">기본 정보 및 환자 정보 입력</p>
               <p className="mt-1 text-xs text-destructive font-medium">
                 * 표시는 필수 입력 항목입니다.
               </p>
@@ -103,7 +122,6 @@ export default function RegisterPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-8">
-              {/* 관리자 선택 */}
               <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
                 <p className="text-xs text-muted-foreground">
                   일반 사용자 또는 관리자 중 가입 유형을 선택할 수 있습니다.
@@ -116,7 +134,7 @@ export default function RegisterPage() {
                     onCheckedChange={(checked) =>
                       setFormData({
                         ...formData,
-                        role: checked ? UserRole.ADMIN : UserRole.USER,
+                        role: checked === true ? UserRole.ADMIN : UserRole.USER,
                       })
                     }
                   />
@@ -129,11 +147,10 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              {/* 필수 입력 : 기본 정보 (유저, 어드민 둘 다) */}
+              {/* 기본  정보 - 필수 */}
               <section className="space-y-5">
                 <h2 className="text-lg font-bold">기본 정보</h2>
 
-                {/* 이름 */}
                 <div className="space-y-2">
                   <Label htmlFor="name">
                     이름 <span className="text-destructive">*</span>
@@ -146,7 +163,6 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                {/* 이메일 */}
                 <div className="space-y-2">
                   <Label htmlFor="email">
                     이메일 <span className="text-destructive">*</span>
@@ -159,7 +175,6 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                {/* 성별 */}
                 <div className="space-y-2">
                   <Label>
                     성별 <span className="text-destructive">*</span>
@@ -180,7 +195,6 @@ export default function RegisterPage() {
                   </RadioGroup>
                 </div>
 
-                {/* 생년월일 */}
                 <div className="space-y-2">
                   <Label htmlFor="birth">
                     생년월일 <span className="text-destructive">*</span>
@@ -196,7 +210,6 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                {/* 주소 */}
                 <div className="space-y-2">
                   <Label htmlFor="address">
                     주소 <span className="text-destructive">*</span>
@@ -211,19 +224,43 @@ export default function RegisterPage() {
                     placeholder="주소를 입력하세요"
                   />
                 </div>
+
+                {/* 기본 정보  - 선택 (종교, 학력/직업) */}
+                <div className="space-y-2">
+                  <Label htmlFor="religion">종교</Label>
+                  <Input
+                    id="religion"
+                    value={formData.religion}
+                    onChange={(e) =>
+                      setFormData({ ...formData, religion: e.target.value })
+                    }
+                    placeholder="예: 무교, 기독교, 불교 등"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="educationJob">학력/직업</Label>
+                  <Input
+                    id="educationJob"
+                    value={formData.educationJob}
+                    onChange={(e) =>
+                      setFormData({ ...formData, educationJob: e.target.value })
+                    }
+                    placeholder="예: 대학교 재학, 회사원 등"
+                  />
+                </div>
               </section>
 
-              {/* 선택 입력 : 부가 정보 (유저만)  */}
+              {/* 환자 정보 (유저만)  */}
               {!isAdmin && (
                 <section className="space-y-5 pt-4 border-t">
                   <div className="flex flex-row items-center space-x-2">
-                    <h2 className="text-lg font-bold">부가 정보</h2>
+                    <h2 className="text-lg font-bold">환자 정보</h2>
                     <span className="text-xs text-muted-foreground">
                       (선택)
                     </span>
                   </div>
 
-                  {/* 주 진단명 (선택) */}
                   <div className="space-y-2">
                     <Label htmlFor="mainDiagnosis">주 진단명</Label>
                     <Input
@@ -239,7 +276,6 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* 학력 (선택) */}
                   <div className="space-y-2">
                     <Label htmlFor="education">학력 (발병 전)</Label>
                     <Input
@@ -252,7 +288,6 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* 병력 - 진단명 */}
                   <div className="space-y-2">
                     <Label htmlFor="historyDiagnosis">병력 - 진단명</Label>
                     <Input
@@ -268,7 +303,6 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* 병력 - 진단받은 시기 */}
                   <div className="space-y-2">
                     <Label htmlFor="historyDate">병력 - 진단받은 시기</Label>
                     <Input
@@ -284,7 +318,6 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* 병력 - 진단받은 병원 */}
                   <div className="space-y-2">
                     <Label htmlFor="historyHospital">
                       병력 - 진단받은 병원
@@ -302,7 +335,6 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* 주증상 */}
                   <div className="space-y-2">
                     <Label htmlFor="mainSymptoms">주증상</Label>
                     <Input
@@ -318,7 +350,6 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* 현재 주로 이용하는 병원 */}
                   <div className="space-y-2">
                     <Label htmlFor="currentHospital">
                       현재 주로 이용하는 병원
@@ -336,7 +367,6 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  {/* 현재 거주하는 장소 */}
                   <div className="space-y-2">
                     <Label htmlFor="currentResidence">현재 거주하는 장소</Label>
                     <Input
@@ -350,6 +380,276 @@ export default function RegisterPage() {
                       }
                       placeholder="예: 본가, 그룹홈, 자립주택 등"
                     />
+                  </div>
+
+                  {/* 의료보장 */}
+                  <div className="space-y-2 pt-2">
+                    <Label>의료보장</Label>
+                    <RadioGroup
+                      value={formData.medicalCoverage}
+                      onValueChange={(value: MedicalCoverage) =>
+                        setFormData({ ...formData, medicalCoverage: value })
+                      }
+                      className="flex flex-wrap gap-4"
+                    >
+                      {Object.entries(MEDICAL_COVERAGE_LABELS).map(
+                        ([value, label]) => (
+                          <div
+                            key={value}
+                            className="flex items-center space-x-2"
+                          >
+                            <RadioGroupItem
+                              value={value}
+                              id={`medical-${value}`}
+                            />
+                            <Label
+                              htmlFor={`medical-${value}`}
+                              className="font-normal"
+                            >
+                              {label}
+                            </Label>
+                          </div>
+                        ),
+                      )}
+                    </RadioGroup>
+                  </div>
+
+                  {/* 산정 특례 */}
+                  <div className="space-y-3">
+                    <Label>산정특례</Label>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="specialCaseRegistered"
+                        checked={formData.specialCaseRegistered}
+                        onCheckedChange={(checked) =>
+                          setFormData({
+                            ...formData,
+                            specialCaseRegistered: checked === true,
+                            specialCaseRegisteredDate:
+                              checked === true
+                                ? formData.specialCaseRegisteredDate
+                                : "",
+                          })
+                        }
+                      />
+                      <Label
+                        htmlFor="specialCaseRegistered"
+                        className="font-normal"
+                      >
+                        등록
+                      </Label>
+                    </div>
+
+                    {formData.specialCaseRegistered && (
+                      <div className="space-y-2">
+                        <Label htmlFor="specialCaseRegisteredDate">
+                          등록일
+                        </Label>
+                        <Input
+                          id="specialCaseRegisteredDate"
+                          type="date"
+                          value={formData.specialCaseRegisteredDate}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              specialCaseRegisteredDate: e.target.value,
+                            })
+                          }
+                          placeholder="등록일을 입력하세요"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 장애 등급 */}
+                  <div className="space-y-3">
+                    <Label>장애 등급</Label>
+
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="disabilityRegistered"
+                        checked={formData.disabilityRegistered}
+                        onCheckedChange={(checked) =>
+                          setFormData({
+                            ...formData,
+                            disabilityRegistered: checked === true,
+                            disabilityStatus:
+                              checked === true
+                                ? formData.disabilityStatus
+                                : "NOT_REGISTERED",
+                            disabilityType:
+                              checked === true ? formData.disabilityType : "",
+                            disabilitySeverity:
+                              checked === true
+                                ? formData.disabilitySeverity
+                                : "",
+                          })
+                        }
+                      />
+                      <Label
+                        htmlFor="disabilityRegistered"
+                        className="font-normal"
+                      >
+                        등록
+                      </Label>
+                    </div>
+
+                    {formData.disabilityRegistered && (
+                      <>
+                        <div className="space-y-2">
+                          <Label>진행 상태</Label>
+                          <RadioGroup
+                            value={formData.disabilityStatus}
+                            onValueChange={(value: DisabilityStatus) =>
+                              setFormData({
+                                ...formData,
+                                disabilityStatus: value,
+                                disabilityType:
+                                  value === "REGISTERED"
+                                    ? formData.disabilityType
+                                    : "",
+                                disabilitySeverity:
+                                  value === "REGISTERED"
+                                    ? formData.disabilitySeverity
+                                    : "",
+                              })
+                            }
+                            className="flex flex-wrap gap-4"
+                          >
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem
+                                value="REGISTERED"
+                                id="disability-status-registered"
+                              />
+                              <Label
+                                htmlFor="disability-status-registered"
+                                className="font-normal"
+                              >
+                                등록
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem
+                                value="IN_PROGRESS"
+                                id="disability-status-inprogress"
+                              />
+                              <Label
+                                htmlFor="disability-status-inprogress"
+                                className="font-normal"
+                              >
+                                진행 중
+                              </Label>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <RadioGroupItem
+                                value="NOT_REGISTERED"
+                                id="disability-status-notregistered"
+                              />
+                              <Label
+                                htmlFor="disability-status-notregistered"
+                                className="font-normal"
+                              >
+                                미등록
+                              </Label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+
+                        {formData.disabilityStatus === "REGISTERED" && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="disabilityType">종류</Label>
+                              <Input
+                                id="disabilityType"
+                                value={formData.disabilityType}
+                                onChange={(e) =>
+                                  setFormData({
+                                    ...formData,
+                                    disabilityType: e.target.value,
+                                  })
+                                }
+                                placeholder="예: 지체, 시각, 청각 등"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>정도</Label>
+                              <RadioGroup
+                                value={formData.disabilitySeverity}
+                                onValueChange={(value: DisabilitySeverity) =>
+                                  setFormData({
+                                    ...formData,
+                                    disabilitySeverity: value,
+                                  })
+                                }
+                                className="flex flex-wrap gap-4"
+                              >
+                                <div className="flex items-center space-x-2 mt-2.5">
+                                  <RadioGroupItem
+                                    value="SEVERE"
+                                    id="severity-severe"
+                                  />
+                                  <Label
+                                    htmlFor="severity-severe"
+                                    className="font-normal"
+                                  >
+                                    심한 장애
+                                  </Label>
+                                </div>
+
+                                <div className="flex items-center space-x-2 mt-2.5">
+                                  <RadioGroupItem
+                                    value="NOT_SEVERE"
+                                    id="severity-notsevere"
+                                  />
+                                  <Label
+                                    htmlFor="severity-notsevere"
+                                    className="font-normal"
+                                  >
+                                    심하지 않은 장애
+                                  </Label>
+                                </div>
+                              </RadioGroup>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* 사회복지서비스 (복수 선택) */}
+                  <div className="space-y-3">
+                    <Label>사회복지서비스</Label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {Object.entries(SOCIAL_WELFARE_LABELS).map(
+                        ([key, label]) => {
+                          const k = key as SocialWelfareService;
+                          const checked =
+                            formData.socialWelfareServices.includes(k);
+
+                          return (
+                            <div
+                              key={k}
+                              className="flex items-center space-x-2"
+                            >
+                              <Checkbox
+                                id={`service-${k}`}
+                                checked={checked}
+                                onCheckedChange={() => toggleSocialService(k)}
+                              />
+                              <Label
+                                htmlFor={`service-${k}`}
+                                className="font-normal"
+                              >
+                                {label}
+                              </Label>
+                            </div>
+                          );
+                        },
+                      )}
+                    </div>
                   </div>
                 </section>
               )}
