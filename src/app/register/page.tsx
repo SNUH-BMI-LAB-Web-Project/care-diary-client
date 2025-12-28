@@ -25,6 +25,9 @@ import {
   SOCIAL_WELFARE_LABELS,
 } from "@/lib/constants";
 import { RegisterFormData } from "@/lib/types";
+import AddressField from "@/components/register/address-field";
+import { parseAddress, validateAddressParts } from "@/utils/address";
+import YearMonthSelect from "@/components/register/year-month-select";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -66,15 +69,17 @@ export default function RegisterPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    document.cookie = `userRole=${formData.role}; path=/; max-age=${
-      60 * 60 * 24 * 7
-    }`;
-
-    if (formData.role === UserRole.ADMIN) {
-      router.push("/admin/users");
-    } else {
-      router.push("/register/questions");
+    const parts = parseAddress(formData.address);
+    const v = validateAddressParts(parts);
+    if (!v.ok) {
+      alert(v.message);
+      return;
     }
+
+    document.cookie = `userRole=${formData.role}; path=/; max-age=${60 * 60 * 24 * 7}`;
+
+    if (formData.role === UserRole.ADMIN) router.push("/admin/users");
+    else router.push("/register/questions");
   };
 
   const providerLabels: Record<string, string> = {
@@ -211,17 +216,12 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="address">
-                    주소 <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="address"
+                  <AddressField
                     value={formData.address}
-                    onChange={(e) =>
-                      setFormData({ ...formData, address: e.target.value })
+                    onChange={(next) =>
+                      setFormData({ ...formData, address: next })
                     }
                     required
-                    placeholder="주소를 입력하세요"
                   />
                 </div>
 
@@ -303,20 +303,17 @@ export default function RegisterPage() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="historyDate">병력 - 진단받은 시기</Label>
-                    <Input
-                      id="historyDate"
-                      type="month"
-                      value={formData.historyDate}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          historyDate: e.target.value,
-                        })
-                      }
-                    />
-                  </div>
+                  <YearMonthSelect
+                    label="병력 - 진단받은 시기"
+                    value={formData.historyDate}
+                    onChange={(next) =>
+                      setFormData((prev) =>
+                        prev.historyDate === next
+                          ? prev
+                          : { ...prev, historyDate: next },
+                      )
+                    }
+                  />
 
                   <div className="space-y-2">
                     <Label htmlFor="historyHospital">
