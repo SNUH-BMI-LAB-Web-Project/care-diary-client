@@ -1,5 +1,7 @@
 /* tslint:disable */
 /* eslint-disable */
+export * from './AdminDiaryApi';
+export * from './AdminUserApi';
 export * from './DiaryApi';
 export * from './HomeApi';
 export * from './ScaleQuestionApi';
