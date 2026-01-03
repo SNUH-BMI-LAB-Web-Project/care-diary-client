@@ -24,7 +24,7 @@ const example = {
   "scaleQuestionId": 1,
   "questionNumber": 1,
   "content": 지난 일주일 동안 긴장되거나 불안했다,
-  "scaleCategory": ANXIETY,
+  "scaleCategory": ANXIETY_DEPRESSION,
   "optionCount": 5,
   "options": [전혀 아니다, 약간 그렇다, 보통이다, 많이 그렇다, 매우 그렇다],
 } satisfies ScaleQuestionDto

@@ -28,7 +28,7 @@ import {
  */
 export interface ScaleQuestionResultDto {
     /**
-     * 척도 카테고리 (ANXIETY: 불안, DEPRESSION: 우울, ANGER: 분노)
+     * 척도 카테고리 (ANXIETY_DEPRESSION: 불안/우울, ANGER: 분노)
      * @type {string}
      * @memberof ScaleQuestionResultDto
      */
@@ -52,8 +52,7 @@ export interface ScaleQuestionResultDto {
  * @export
  */
 export const ScaleQuestionResultDtoScaleCategoryEnum = {
-    Anxiety: 'ANXIETY',
-    Depression: 'DEPRESSION',
+    AnxietyDepression: 'ANXIETY_DEPRESSION',
     Anger: 'ANGER'
 } as const;
 export type ScaleQuestionResultDtoScaleCategoryEnum = typeof ScaleQuestionResultDtoScaleCategoryEnum[keyof typeof ScaleQuestionResultDtoScaleCategoryEnum];

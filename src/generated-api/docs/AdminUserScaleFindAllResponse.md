@@ -16,7 +16,7 @@ import type { AdminUserScaleFindAllResponse } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "items": {1=[{scaleCategory=ANXIETY, score=12, createdAt=2024-01-15T10:30:00}, {scaleCategory=DEPRESSION, score=8, createdAt=2024-01-15T10:30:00}], 2=[{scaleCategory=ANXIETY, score=10, createdAt=2024-02-15T10:30:00}]},
+  "items": {1=[{scaleCategory=ANXIETY_DEPRESSION, score=8, createdAt=2024-01-15T10:30:00}], 2=[{scaleCategory=ANGER, score=10, createdAt=2024-02-15T10:30:00}]},
 } satisfies AdminUserScaleFindAllResponse
 
 console.log(example)

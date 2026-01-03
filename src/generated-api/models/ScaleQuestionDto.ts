@@ -38,7 +38,7 @@ export interface ScaleQuestionDto {
      */
     content: string;
     /**
-     * 척도 카테고리 (ANXIETY, DEPRESSION, ANGER)
+     * 척도 카테고리 (ANXIETY_DEPRESSION, ANGER)
      * @type {string}
      * @memberof ScaleQuestionDto
      */
@@ -62,8 +62,7 @@ export interface ScaleQuestionDto {
  * @export
  */
 export const ScaleQuestionDtoScaleCategoryEnum = {
-    Anxiety: 'ANXIETY',
-    Depression: 'DEPRESSION',
+    AnxietyDepression: 'ANXIETY_DEPRESSION',
     Anger: 'ANGER'
 } as const;
 export type ScaleQuestionDtoScaleCategoryEnum = typeof ScaleQuestionDtoScaleCategoryEnum[keyof typeof ScaleQuestionDtoScaleCategoryEnum];

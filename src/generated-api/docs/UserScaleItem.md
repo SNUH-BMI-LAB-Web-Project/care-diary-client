@@ -17,7 +17,7 @@ import type { UserScaleItem } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "scaleCategory": ANXIETY,
+  "scaleCategory": ANGER,
   "score": 12,
 } satisfies UserScaleItem
 

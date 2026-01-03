@@ -16,7 +16,7 @@ import type { UserScaleFindAllResponse } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "items": {0=[{scaleCategory=ANXIETY, score=12}, {scaleCategory=DEPRESSION, score=8}]},
+  "items": {0=[{scaleCategory=ANXIETY_DEPRESSION, score=12}, {scaleCategory=ANGER, score=8}]},
 } satisfies UserScaleFindAllResponse
 
 console.log(example)

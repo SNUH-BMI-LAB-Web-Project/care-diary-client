@@ -20,7 +20,7 @@ import { mapValues } from '../runtime';
  */
 export interface UserScaleItem {
     /**
-     * 척도 카테고리 (ANXIETY, DEPRESSION, ANGER)
+     * 척도 카테고리 (ANXIETY_DEPRESSION, ANGER)
      * @type {string}
      * @memberof UserScaleItem
      */
@@ -38,8 +38,7 @@ export interface UserScaleItem {
  * @export
  */
 export const UserScaleItemScaleCategoryEnum = {
-    Anxiety: 'ANXIETY',
-    Depression: 'DEPRESSION',
+    AnxietyDepression: 'ANXIETY_DEPRESSION',
     Anger: 'ANGER'
 } as const;
 export type UserScaleItemScaleCategoryEnum = typeof UserScaleItemScaleCategoryEnum[keyof typeof UserScaleItemScaleCategoryEnum];

@@ -58,7 +58,7 @@ export interface AdminUserScaleQuestionResultResponse {
      */
     scaleQuestionTermCount: number;
     /**
-     * 척도 카테고리별 질문 응답 결과 (키: ANXIETY/DEPRESSION/ANGER)
+     * 척도 카테고리별 질문 응답 결과 (키: ANXIETY_DEPRESSION/ANGER)
      * @type {{ [key: string]: ScaleQuestionResultDto; }}
      * @memberof AdminUserScaleQuestionResultResponse
      */
