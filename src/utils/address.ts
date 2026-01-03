@@ -1,7 +1,7 @@
 export type AddressParts = {
-  sido: string; // 시·도
-  sigungu: string; // 시·군·구
-  detail: string; // 상세
+  sido: string;
+  sigungu: string;
+  detail: string;
 };
 
 export const ADDRESS_DELIM = " // " as const;
@@ -24,17 +24,6 @@ export function parseAddress(value: string): AddressParts {
     sigungu: sigungu.trim(),
     detail: rest.join(ADDRESS_DELIM).trim(),
   };
-}
-
-export function validateAddressParts(parts: AddressParts): {
-  ok: boolean;
-  message?: string;
-} {
-  if (!parts.sido) return { ok: false, message: "시·도를 선택해주세요." };
-  if (!parts.sigungu) return { ok: false, message: "시·군·구를 선택해주세요." };
-  if (!parts.detail.trim())
-    return { ok: false, message: "상세 주소(도로명)를 입력해주세요." };
-  return { ok: true };
 }
 
 export function pickSidoSigunguFromRoadAddress(road: string): {
