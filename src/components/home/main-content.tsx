@@ -18,6 +18,11 @@ type DiaryEntry = {
   date: string;
 };
 
+type TodayQuestion = {
+  title: string;
+  description: string;
+};
+
 interface MainContentProps {
   selectedDate: number | null;
   year: number;
@@ -25,7 +30,7 @@ interface MainContentProps {
   diaryEntries?: DiaryEntry[];
 
   shouldTakeSessionSurvey?: boolean;
-  todayQuestion?: string | null;
+  todayQuestion?: TodayQuestion | null;
   recommended?: RecommendedItem[];
 }
 
@@ -43,12 +48,6 @@ function getCurrentWeekText(): string {
 
   return `${month}월 ${weekLabel}주`;
 }
-
-const DEFAULT_RECOMMENDED: RecommendedItem[] = [
-  { title: "심리 상담 서비스" },
-  { title: "감정 관리 가이드" },
-  { title: "돌봄 커뮤니티" },
-];
 
 function getLocalTodayISO(): string {
   const now = new Date();
@@ -79,7 +78,7 @@ export function MainContent({
 
   shouldTakeSessionSurvey = false,
   todayQuestion = null,
-  recommended = DEFAULT_RECOMMENDED,
+  recommended = [],
 }: MainContentProps) {
   const currentWeekText = getCurrentWeekText();
 
@@ -121,58 +120,56 @@ export function MainContent({
     </div>
   );
 
-  const renderRecommended = () => (
-    <div className="space-y-4 rounded-sm border border-border bg-card p-8">
-      <h2 className="text-lg font-semibold">{UI_TEXT.HOME.RECOMMENDED}</h2>
+  const renderRecommended = () => {
+    if (!recommended || recommended.length === 0) {
+      return (
+        <div className="rounded-sm border border-border bg-card p-8">
+          <h2 className="text-lg font-semibold">{UI_TEXT.HOME.RECOMMENDED}</h2>
+          <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
+            돌봄 과정에서 도움이 될 수 있는 서비스가 준비 중입니다. 필요할 때
+            언제든 안내해드릴게요 ✨
+          </p>
+        </div>
+      );
+    }
 
-      <div className="space-y-2">
-        {(recommended?.length ? recommended : DEFAULT_RECOMMENDED).map(
-          (item, idx) => {
-            const hasUrl = !!item.url;
+    return (
+      <div className="space-y-4 rounded-sm border border-border bg-card p-8">
+        <h2 className="text-lg font-semibold">{UI_TEXT.HOME.RECOMMENDED}</h2>
 
-            return (
-              <Card
-                key={`${item.title}-${idx}`}
-                className="border-border rounded-sm hover:bg-accent/50 transition-colors"
-              >
-                <CardContent className="flex items-center justify-between px-6">
-                  <span className="font-medium">{item.title}</span>
+        <div className="space-y-2">
+          {recommended.map((item, idx) => (
+            <Card
+              key={`${item.title}-${idx}`}
+              className="border-border rounded-sm hover:bg-accent/50 transition-colors"
+            >
+              <CardContent className="flex items-center justify-between px-6">
+                <span className="font-medium">{item.title}</span>
 
-                  {hasUrl ? (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-sm bg-primary/10 hover:bg-primary/20"
-                      asChild
-                    >
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        aria-label={`${item.title} 열기`}
-                      >
-                        <ExternalLink className="h-4 w-4 text-primary" />
-                      </a>
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-9 w-9 rounded-sm bg-primary/10"
-                      disabled
-                      aria-label={`${item.title} 링크 없음`}
+                {item.url && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 rounded-sm bg-primary/10 hover:bg-primary/20"
+                    asChild
+                  >
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`${item.title} 열기`}
                     >
                       <ExternalLink className="h-4 w-4 text-primary" />
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          },
-        )}
+                    </a>
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -255,12 +252,13 @@ export function MainContent({
         <>
           <div className="space-y-4 rounded-sm border border-border bg-card p-8">
             <h2 className="text-lg font-semibold">
-              {UI_TEXT.HOME.TODAY_QUESTION}
+              오늘의 질문 — {todayQuestion?.title}
             </h2>
-            <p className="text-base leading-relaxed text-muted-foreground">
-              {todayQuestion ??
-                "오늘 하루 중 가장 기억에 남는 순간은 무엇인가요? 그 순간을 떠올리면 어떤 감정이 느껴지나요?"}
+
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {todayQuestion?.description}
             </p>
+
             <Link href="/diary/write">
               <Button className="w-full gap-2 rounded-sm" size="lg">
                 <Plus className="h-5 w-5" />
