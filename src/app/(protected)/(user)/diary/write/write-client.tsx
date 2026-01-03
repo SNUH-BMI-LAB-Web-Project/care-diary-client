@@ -123,14 +123,14 @@ export default function DiaryWriteClient() {
                   <label htmlFor="content" className="text-base font-medium">
                     {UI_TEXT.DIARY.WRITE_CONTENT}
                   </label>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    type="button"
-                    className="rounded-sm bg-transparent"
-                  >
-                    추천 질문 보기
-                  </Button>
+                  {/*<Button*/}
+                  {/*  variant="outline"*/}
+                  {/*  size="sm"*/}
+                  {/*  type="button"*/}
+                  {/*  className="rounded-sm bg-transparent"*/}
+                  {/*>*/}
+                  {/*  추천 질문 보기*/}
+                  {/*</Button>*/}
                 </div>
                 <Textarea
                   id="content"
