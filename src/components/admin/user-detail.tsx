@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,78 +12,196 @@ import {
   EMOTION_CONFIG,
   REFLECTION_QUESTIONS,
 } from "@/lib/constants";
-import type { User } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-interface UserDetailProps {
-  user: User & {
-    birthDate: string;
-    disease: string;
-    diaryCount: number;
-    risk?: { isRisk: boolean; reason: string };
-  };
+import { adminUserApi, adminDiariyApi } from "@/lib/api/client";
+
+import {
+  AdminDiaryDto,
+  UserScaleItem,
+  UserScaleItemScaleCategoryEnum,
+} from "@/generated-api";
+
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { formatCreated } from "@/utils/date";
+
+function toYMD(year: number, month: number, day: number) {
+  const mm = String(month).padStart(2, "0");
+  const dd = String(day).padStart(2, "0");
+  return `${year}-${mm}-${dd}`;
 }
 
-export function UserDetail({ user }: UserDetailProps) {
+type UserDetailData = {
+  userId: string;
+  name: string;
+  birthDate: Date | string;
+  primaryDiagnosis?: string;
+  diaryDates: Array<Date | string>;
+  monthlyDiaryCount: number;
+  yearlyDiaryCount: number;
+  emotionCounts: Record<string, number>;
+  riskReason?: string;
+};
+
+interface UserDetailProps {
+  userId: string;
+}
+
+export function UserDetail({ userId }: UserDetailProps) {
+  const router = useRouter();
+
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
   const [selectedDate, setSelectedDate] = useState<number | null>(null);
 
-  const monthDiaryCount = 12;
-  const yearDiaryCount = user.diaryCount;
-  const emotionCounts = {
-    [Emotion.HAPPY]: 8,
-    [Emotion.LOVE]: 3,
-    [Emotion.SAD]: 1,
-  };
+  const [detail, setDetail] = useState<UserDetailData | null>(null);
+  const [selectedDiaries, setSelectedDiaries] = useState<AdminDiaryDto[]>([]);
 
-  const diaryDates = [2, 4, 5, 6, 8, 9, 12, 25, 27];
+  const [scales, setScales] = useState<
+    Array<{
+      session: number;
+      anxietyDepression: number | null;
+      anger: number | null;
+      createdAt?: Date | string;
+    }>
+  >([]);
+  const [loading, setLoading] = useState(true);
 
-  const selectedDiary =
-    selectedDate && diaryDates.includes(selectedDate)
-      ? {
-          id: `id-${selectedDate}`,
-          date: `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(selectedDate).padStart(2, "0")}`,
-          time: "22:49",
-          emotion: Emotion.HAPPY,
-          content:
-            "오늘은 가족들과 함께 공원에 다녀왔습니다. 날씨도 좋고 기분이 좋았어요.",
-          reflectionScores: [8, 5, 3, 7, 6, 9],
-        }
-      : null;
+  const [showAllDiaries, setShowAllDiaries] = useState(false);
 
-  const surveySessions = [
-    { session: 1, anger: 12, anxiety: 15, depression: 18, date: "2025.11.01" },
-    { session: 2, anger: 10, anxiety: 13, depression: 16, date: "2025.11.08" },
-    { session: 3, anger: 8, anxiety: 11, depression: 14, date: "2025.11.15" },
-    { session: 4, anger: 6, anxiety: 9, depression: 12, date: "2025.11.22" },
-    { session: 5, anger: 5, anxiety: 7, depression: 10, date: "2025.11.29" },
-  ];
+  useEffect(() => {
+    let mounted = true;
 
-  const handleDateSelect = (date: number | null) => {
+    async function run() {
+      setLoading(true);
+      try {
+        const [userRes, scaleRes] = await Promise.all([
+          adminUserApi.findUserById({ userId }),
+          adminUserApi.findUserScales({ userId }),
+        ]);
+
+        const userData = userRes?.data as UserDetailData | undefined;
+        if (mounted) setDetail(userData ?? null);
+
+        const items = (scaleRes?.data?.items ?? {}) as Record<
+          string,
+          Array<UserScaleItem & { createdAt?: Date | string }>
+        >;
+
+        const sessions = Object.entries(items)
+          .map(([k, arr]) => {
+            const session = Number(k);
+            const anxietyDepression =
+              arr.find(
+                (x) =>
+                  x.scaleCategory ===
+                  UserScaleItemScaleCategoryEnum.AnxietyDepression,
+              )?.score ?? null;
+
+            const anger =
+              arr.find(
+                (x) => x.scaleCategory === UserScaleItemScaleCategoryEnum.Anger,
+              )?.score ?? null;
+
+            const createdAt = arr?.[0]?.createdAt;
+
+            return { session, anxietyDepression, anger, createdAt };
+          })
+          .filter((x) => !Number.isNaN(x.session))
+          .sort((a, b) => a.session - b.session);
+
+        if (mounted) setScales(sessions);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+
+    run();
+    return () => {
+      mounted = false;
+    };
+  }, [userId]);
+
+  const diaryDaysInMonth = useMemo(() => {
+    const src = detail?.diaryDates ?? [];
+    const y = currentYear;
+    const m = currentMonth;
+
+    const days = new Set<number>();
+    for (const v of src) {
+      const d =
+        typeof v === "string" ? new Date(`${v}T00:00:00+09:00`) : new Date(v);
+      if (Number.isNaN(d.getTime())) continue;
+      if (d.getFullYear() === y && d.getMonth() + 1 === m) {
+        days.add(d.getDate());
+      }
+    }
+    return Array.from(days).sort((a, b) => a - b);
+  }, [detail?.diaryDates, currentYear, currentMonth]);
+
+  const emotionCounts = useMemo(() => {
+    const raw = detail?.emotionCounts ?? {};
+    return {
+      [Emotion.HAPPY]: raw[Emotion.HAPPY] ?? raw["HAPPY"] ?? 0,
+      [Emotion.LOVE]: raw[Emotion.LOVE] ?? raw["LOVE"] ?? 0,
+      [Emotion.SAD]: raw[Emotion.SAD] ?? raw["SAD"] ?? 0,
+    };
+  }, [detail?.emotionCounts]);
+
+  const handleDateSelect = async (date: number | null) => {
     if (selectedDate === date) {
       setSelectedDate(null);
-    } else {
-      setSelectedDate(date);
+      setSelectedDiaries([]);
+      setShowAllDiaries(false);
+      return;
     }
+
+    setSelectedDate(date);
+    setSelectedDiaries([]);
+    setShowAllDiaries(false);
+
+    if (!date) return;
+
+    const ymd = toYMD(currentYear, currentMonth, date);
+    const res = await adminDiariyApi.findAllByUserIdAndDate({
+      userId,
+      date: new Date(ymd),
+    });
+
+    const diaries = (res?.data?.diaries ?? []) as AdminDiaryDto[];
+    setSelectedDiaries(diaries);
   };
 
   const handleOpenSdohResults = (diaryId: string) => {
     router.push(`/admin/sdoh/${diaryId}`);
   };
 
-  const router = useRouter();
+  const risk = detail?.riskReason
+    ? { isRisk: true, reason: detail.riskReason }
+    : { isRisk: false, reason: "" };
+
+  if (loading && !detail) {
+    return <div className="px-10 py-6 pb-10">로딩 중...</div>;
+  }
+
+  if (!detail) {
+    return (
+      <div className="px-10 py-6 pb-10">유저 정보를 불러오지 못했습니다.</div>
+    );
+  }
 
   return (
     <div className="px-10 py-6 pb-10">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">{user.name}의 일기</h1>
+        <h1 className="text-2xl font-bold">{detail.name}의 일기</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {user.birthDate} · {user.disease}
+          {formatCreated(detail.birthDate, "date")}
+          {" · "}
+          {detail.primaryDiagnosis ?? "주진단명 없음"}
         </p>
       </div>
 
-      {user.risk?.isRisk && (
+      {risk.isRisk && (
         <Card className="mb-6 border-destructive/50 bg-destructive/5 rounded-sm">
           <CardHeader>
             <CardTitle className="text-base text-destructive flex items-center">
@@ -92,7 +210,7 @@ export function UserDetail({ user }: UserDetailProps) {
           </CardHeader>
           <CardContent>
             <p className="text-sm text-destructive leading-relaxed -mt-4">
-              : {user.risk.reason}
+              : {risk.reason}
             </p>
           </CardContent>
         </Card>
@@ -110,8 +228,11 @@ export function UserDetail({ user }: UserDetailProps) {
               onMonthChange={(year, month) => {
                 setCurrentYear(year);
                 setCurrentMonth(month);
+                setSelectedDate(null);
+                setSelectedDiaries([]);
+                setShowAllDiaries(false);
               }}
-              diaryDates={diaryDates}
+              diaryDates={diaryDaysInMonth}
               onDateSelect={handleDateSelect}
               selectedDate={selectedDate}
             />
@@ -124,9 +245,8 @@ export function UserDetail({ user }: UserDetailProps) {
               <CardTitle className="text-base">
                 {UI_TEXT.HOME.THIS_MONTH}
               </CardTitle>
-
               <p className="text-2xl font-bold text-primary">
-                {monthDiaryCount}건
+                {detail.monthlyDiaryCount}건
               </p>
             </div>
           </Card>
@@ -136,9 +256,8 @@ export function UserDetail({ user }: UserDetailProps) {
               <CardTitle className="text-base">
                 {UI_TEXT.HOME.THIS_YEAR}
               </CardTitle>
-
               <p className="text-2xl font-bold text-primary">
-                {yearDiaryCount}건
+                {detail.yearlyDiaryCount}건
               </p>
             </div>
           </Card>
@@ -161,12 +280,8 @@ export function UserDetail({ user }: UserDetailProps) {
                       className={`flex items-center gap-2 rounded-sm px-3 py-1.5 ${config.bgColor}`}
                     >
                       <Icon className={`h-4 w-4 ${config.color}`} />
-
-                      <span className="text-sm ">
-                        {EMOTION_LABELS[emotion]}
-                      </span>
-
-                      <span className="text-sm font-bold ">{count}</span>
+                      <span className="text-sm">{EMOTION_LABELS[emotion]}</span>
+                      <span className="text-sm font-bold">{count}</span>
                     </div>
                   );
                 })}
@@ -176,78 +291,117 @@ export function UserDetail({ user }: UserDetailProps) {
         </div>
       </div>
 
-      {selectedDiary && (
-        <Card className="mb-6 rounded-sm">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle>
-                {currentYear}년 {currentMonth}월 {selectedDate}일 일기
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">
-                  작성 일시: {selectedDiary.date} {selectedDiary.time}
-                </span>
-                <Button
-                  variant="outline"
-                  className="rounded-sm"
-                  onClick={() => handleOpenSdohResults(selectedDiary.id)}
-                >
-                  SDoH 결과 확인
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-8">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">내 기분은?</span>
-              {(() => {
-                const emotion = selectedDiary.emotion;
-                const config = EMOTION_CONFIG[emotion];
-                const Icon = config.icon;
+      {selectedDiaries.length > 0 && selectedDate && (
+        <div className="mb-6 space-y-4">
+          {(showAllDiaries ? selectedDiaries : selectedDiaries.slice(0, 1)).map(
+            (selectedDiary) => (
+              <Card key={selectedDiary.diaryId} className="rounded-sm">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle>
+                      {currentYear}년 {currentMonth}월 {selectedDate}일 일기
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-muted-foreground">
+                        작성 일시:
+                        {formatCreated(selectedDiary.createdAt, "datetime")}
+                      </span>
 
-                return (
-                  <div
-                    className={`flex items-center gap-2 rounded-sm px-3 py-1 ${config.bgColor}`}
-                  >
-                    <Icon className={`h-4 w-4 ${config.color}`} />
-                    <span className="font-medium text-sm">
-                      {EMOTION_LABELS[emotion]}
-                    </span>
+                      <Button
+                        variant="outline"
+                        className="rounded-sm"
+                        onClick={() =>
+                          handleOpenSdohResults(selectedDiary.diaryId)
+                        }
+                      >
+                        SDoH 결과 확인
+                      </Button>
+                    </div>
                   </div>
-                );
-              })()}
-            </div>
+                </CardHeader>
 
-            <div>
-              <h3 className="mb-2 text-sm font-medium">일기 내용 필드</h3>
-              <div className="rounded-sm border bg-muted/30 p-4 text-sm">
-                <p className="leading-relaxed">{selectedDiary.content}</p>
-              </div>
-            </div>
+                <CardContent className="space-y-8">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium">내 기분은?</span>
+                    {(() => {
+                      const emotion = selectedDiary.emotion;
+                      const config = EMOTION_CONFIG[emotion];
+                      const Icon = config.icon;
 
-            <div>
-              <h3 className="mb-3 text-sm font-medium">생각 정리 요약</h3>
-
-              <div className="overflow-hidden rounded-sm border bg-muted/30">
-                {REFLECTION_QUESTIONS.map((question, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      "flex items-center justify-between px-4 py-3 text-sm",
-                      index !== REFLECTION_QUESTIONS.length - 1 &&
-                        "border-b border-border",
-                    )}
-                  >
-                    <p className="flex-1 text-muted-foreground">{question}</p>
-                    <span className="ml-4 text-lg font-semibold text-primary">
-                      {selectedDiary.reflectionScores[index]}
-                    </span>
+                      return (
+                        <div
+                          className={`flex items-center gap-2 rounded-sm px-3 py-1 ${config.bgColor}`}
+                        >
+                          <Icon className={`h-4 w-4 ${config.color}`} />
+                          <span className="font-medium text-sm">
+                            {EMOTION_LABELS[emotion]}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+
+                  <div>
+                    <h3 className="mb-2 text-sm font-medium">일기 내용</h3>
+                    <div className="rounded-sm border bg-muted/30 p-4 text-sm">
+                      <p className="leading-relaxed">{selectedDiary.content}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="mb-3 text-sm font-medium">생각 정리 요약</h3>
+
+                    <div className="overflow-hidden rounded-sm border bg-muted/30">
+                      {REFLECTION_QUESTIONS.map((question, index) => {
+                        const score =
+                          selectedDiary.questionScores?.[index]?.score;
+                        return (
+                          <div
+                            key={index}
+                            className={cn(
+                              "flex items-center justify-between px-4 py-3 text-sm",
+                              index !== REFLECTION_QUESTIONS.length - 1 &&
+                                "border-b border-border",
+                            )}
+                          >
+                            <p className="flex-1 text-muted-foreground">
+                              {question}
+                            </p>
+                            <span className="ml-4 text-lg font-semibold text-primary">
+                              {typeof score === "number" ? score : "-"}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ),
+          )}
+
+          {selectedDiaries.length > 2 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full rounded-sm py-4 text-sm font-medium
+                   flex items-center justify-center gap-2"
+              onClick={() => setShowAllDiaries((v) => !v)}
+            >
+              {showAllDiaries ? (
+                <>
+                  <ChevronUp className="h-3 w-3" />
+                  접기
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3 w-3" />
+                  전체보기 ({selectedDiaries.length - 1}개)
+                </>
+              )}
+            </Button>
+          )}
+        </div>
       )}
 
       <Card className="rounded-sm">
@@ -263,12 +417,17 @@ export function UserDetail({ user }: UserDetailProps) {
             <Button
               variant="outline"
               className="rounded-sm"
-              onClick={() => router.push("/analysis/graphs")}
+              onClick={() =>
+                router.push(
+                  `/analysis/graphs/${detail.userId}/${encodeURIComponent(detail.name)}`,
+                )
+              }
             >
               설문 통계 확인
             </Button>
           </div>
         </CardHeader>
+
         <CardContent>
           <div className="overflow-hidden rounded-sm border border-border">
             <table className="w-full border-collapse">
@@ -278,10 +437,7 @@ export function UserDetail({ user }: UserDetailProps) {
                     설문 차수
                   </th>
                   <th className="border-b border-border p-3 text-sm font-medium text-center">
-                    불안 점수
-                  </th>
-                  <th className="border-b border-border p-3 text-sm font-medium text-center">
-                    우울 점수
+                    우울·불안 점수
                   </th>
                   <th className="border-b border-border p-3 text-sm font-medium text-center">
                     분노 점수
@@ -292,33 +448,33 @@ export function UserDetail({ user }: UserDetailProps) {
                   <th className="border-b border-border p-3 text-sm font-medium"></th>
                 </tr>
               </thead>
+
               <tbody>
-                {surveySessions.map((result) => (
-                  <tr key={result.session} className="hover:bg-muted/50">
+                {scales.map((row) => (
+                  <tr key={row.session} className="hover:bg-muted/50">
                     <td className="border-b border-border p-3 text-sm text-center">
-                      {result.session}
+                      {row.session + 1}
                     </td>
+
                     <td className="border-b border-border p-3 text-sm font-medium text-center">
-                      {result.anxiety}점
+                      {row.anxietyDepression ?? "-"}점
                     </td>
+
                     <td className="border-b border-border p-3 text-sm font-medium text-center">
-                      {result.depression}점
+                      {row.anger ?? "-"}점
                     </td>
-                    <td className="border-b border-border p-3 text-sm font-medium text-center">
-                      {result.anger}점
-                    </td>
+
                     <td className="border-b border-border p-3 text-sm text-muted-foreground text-center">
-                      {result.date}
+                      {formatCreated(row.createdAt, "date")}
                     </td>
+
                     <td className="border-b border-border p-3 text-sm text-center">
                       <Button
                         variant="ghost"
                         size="sm"
                         className="text-primary hover:underline hover:text-primary rounded-sm"
                         onClick={() =>
-                          router.push(
-                            `/admin/survey/${user.id}/${result.session}`,
-                          )
+                          router.push(`/admin/survey/${userId}/${row.session}`)
                         }
                       >
                         설문 결과 확인
@@ -326,6 +482,17 @@ export function UserDetail({ user }: UserDetailProps) {
                     </td>
                   </tr>
                 ))}
+
+                {scales.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="border-b border-border p-6 text-sm text-muted-foreground text-center"
+                    >
+                      설문 데이터가 없습니다.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
