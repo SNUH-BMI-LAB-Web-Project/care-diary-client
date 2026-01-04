@@ -166,7 +166,7 @@ export function UsageManagement() {
                 <thead>
                   <tr className="bg-muted">
                     <th className="border-b border-border p-3 text-sm font-medium text-center">
-                      번호
+                      No
                     </th>
                     <th className="border-b border-border p-3 text-sm font-medium text-center">
                       사용자
@@ -205,19 +205,17 @@ export function UsageManagement() {
 
                       return (
                         <tr key={u.userId} className="hover:bg-muted/50">
-                          {/* 번호 */}
                           <td className="border-b border-border p-3 text-sm text-center text-muted-foreground">
                             {number}
                           </td>
 
-                          {/* 이름 (userId) */}
                           <td className="border-b border-border p-3 text-sm text-center">
-                            <div className="font-medium">
+                            <span className="font-medium">
                               {u.userName ?? "-"}
-                            </div>
-                            <div className="text-xs text-muted-foreground font-mono">
+                            </span>
+                            <span className="ml-1 text-xs text-muted-foreground font-mono">
                               ({u.userId})
-                            </div>
+                            </span>
                           </td>
 
                           <td className="border-b border-border p-3 text-sm font-medium text-center">
