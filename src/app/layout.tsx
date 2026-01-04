@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "돌봄 일기",
+  title: "돌봄일기",
   description: "나의 감정을 기록하고 돌아보는 공간",
   generator: "v0.app",
   icons: {
