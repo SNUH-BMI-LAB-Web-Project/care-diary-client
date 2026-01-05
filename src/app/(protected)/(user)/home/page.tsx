@@ -360,19 +360,7 @@ export default function HomePage() {
             diaryEntries={diaryEntries}
             shouldTakeSessionSurvey={isScaleQuestionRequired}
             todayQuestion={todayQuestion}
-            recommended={recommended.map((x) => ({
-              title:
-                typeof (x as unknown as { title?: unknown }).title === "string"
-                  ? (x as unknown as { title: string }).title
-                  : typeof (x as unknown as { name?: unknown }).name ===
-                      "string"
-                    ? (x as unknown as { name: string }).name
-                    : "추천 서비스",
-              url:
-                typeof (x as unknown as { url?: unknown }).url === "string"
-                  ? (x as unknown as { url: string }).url
-                  : undefined,
-            }))}
+            recommendedWelfareServices={recommended}
           />
         </div>
       </main>

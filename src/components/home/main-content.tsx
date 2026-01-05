@@ -5,11 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Plus, List, ExternalLink, CircleCheckBig } from "lucide-react";
 import Link from "next/link";
 import { UI_TEXT } from "@/lib/constants";
-
-type RecommendedItem = {
-  title: string;
-  url?: string;
-};
+import { WelfareServiceItem } from "@/generated-api";
 
 type DiaryEntry = {
   id: string;
@@ -31,7 +27,7 @@ interface MainContentProps {
 
   shouldTakeSessionSurvey?: boolean;
   todayQuestion?: TodayQuestion | null;
-  recommended?: RecommendedItem[];
+  recommendedWelfareServices?: WelfareServiceItem[];
 }
 
 function getCurrentWeekText(): string {
@@ -78,7 +74,7 @@ export function MainContent({
 
   shouldTakeSessionSurvey = false,
   todayQuestion = null,
-  recommended = [],
+  recommendedWelfareServices = [],
 }: MainContentProps) {
   const currentWeekText = getCurrentWeekText();
 
@@ -121,7 +117,10 @@ export function MainContent({
   );
 
   const renderRecommended = () => {
-    if (!recommended || recommended.length === 0) {
+    if (
+      !recommendedWelfareServices ||
+      recommendedWelfareServices.length === 0
+    ) {
       return (
         <div className="rounded-sm border border-border bg-card p-8">
           <h2 className="text-lg font-semibold">{UI_TEXT.HOME.RECOMMENDED}</h2>
@@ -138,15 +137,22 @@ export function MainContent({
         <h2 className="text-lg font-semibold">{UI_TEXT.HOME.RECOMMENDED}</h2>
 
         <div className="space-y-2">
-          {recommended.map((item, idx) => (
+          {recommendedWelfareServices.map((item, idx) => (
             <Card
-              key={`${item.title}-${idx}`}
+              key={`${item.serviceName}-${idx}`}
               className="border-border rounded-sm hover:bg-accent/50 transition-colors"
             >
               <CardContent className="flex items-center justify-between px-6">
-                <span className="font-medium">{item.title}</span>
+                <div className="py-4">
+                  <div className="font-medium">{item.serviceName}</div>
+                  {item.serviceDigest && (
+                    <p className="mt-1 text-sm text-muted-foreground leading-relaxed">
+                      {item.serviceDigest}
+                    </p>
+                  )}
+                </div>
 
-                {item.url && (
+                {item.serviceDetailLink && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -154,10 +160,10 @@ export function MainContent({
                     asChild
                   >
                     <a
-                      href={item.url}
+                      href={item.serviceDetailLink}
                       target="_blank"
                       rel="noreferrer"
-                      aria-label={`${item.title} 열기`}
+                      aria-label={`${item.serviceName} 열기`}
                     >
                       <ExternalLink className="h-4 w-4 text-primary" />
                     </a>
