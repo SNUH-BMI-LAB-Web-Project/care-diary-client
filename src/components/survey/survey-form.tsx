@@ -20,25 +20,25 @@ import { scaleQuestionApi } from "@/lib/api/client";
 import type {
   CommonResponseScaleQuestionFindAllResponse,
   ScaleQuestionDto,
-  ScaleQuestionDtoScaleCategoryEnum,
   ScaleQuestionUserAnswerItem,
   ScaleQuestionUserAnswerRegisterRequest,
 } from "@/generated-api";
 
-type SurveyStep = ScaleQuestionDtoScaleCategoryEnum;
 export type SurveyMode = "REGISTER" | "SESSION";
 
-const STEP_ORDER: SurveyStep[] = ["ANGER", "ANXIETY_DEPRESSION"];
+type SurveyStep = "ANGER" | "ANXIETY_DEPRESSION_UI";
+
+const STEP_ORDER: SurveyStep[] = ["ANGER", "ANXIETY_DEPRESSION_UI"];
 
 const STEP_LABEL: Record<SurveyStep, string> = {
   ANGER: "분노 설문",
-  ANXIETY_DEPRESSION: "우울·불안 설문",
+  ANXIETY_DEPRESSION_UI: "우울·불안 설문",
 };
 
 const STEP_GUIDE: Record<SurveyStep, string> = {
   ANGER:
     "지난 일주일 동안의 경험을 떠올리며, 각 문항의 감정을 얼마나 느꼈는지 선택해 주세요.",
-  ANXIETY_DEPRESSION:
+  ANXIETY_DEPRESSION_UI:
     "지난 일주일 동안의 상태를 기준으로, 각 문항을 읽고 가장 가까운 선택지를 골라 주세요.",
 };
 
@@ -105,10 +105,20 @@ export default function SurveyForm({
   }, []);
 
   const stepQuestions = useMemo(() => {
+    const sorted = (arr: ScaleQuestionDto[]) =>
+      arr.slice().sort(sortByQuestionNumber);
+
+    if (step === "ANGER") {
+      return sorted(questions.filter((q) => q.scaleCategory === "ANGER"));
+    }
+
     return questions
-      .filter((q) => q.scaleCategory === step)
+      .filter(
+        (q) =>
+          q.scaleCategory === "DEPRESSION" || q.scaleCategory === "ANXIETY",
+      )
       .slice()
-      .sort(sortByQuestionNumber);
+      .sort((a, b) => a.questionNumber - b.questionNumber);
   }, [questions, step]);
 
   const stepIndex = STEP_ORDER.indexOf(step);
