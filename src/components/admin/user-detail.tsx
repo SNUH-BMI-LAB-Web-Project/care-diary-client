@@ -62,8 +62,9 @@ export function UserDetail({ userId }: UserDetailProps) {
   const [scales, setScales] = useState<
     Array<{
       session: number;
-      anxietyDepression: number | null;
       anger: number | null;
+      depression: number | null;
+      anxiety: number | null;
       createdAt?: Date | string;
     }>
   >([]);
@@ -100,21 +101,26 @@ export function UserDetail({ userId }: UserDetailProps) {
         const sessions = Object.entries(items)
           .map(([k, arr]) => {
             const session = Number(k);
-            const anxietyDepression =
-              arr.find(
-                (x) =>
-                  x.scaleCategory ===
-                  UserScaleItemScaleCategoryEnum.AnxietyDepression,
-              )?.score ?? null;
-
             const anger =
               arr.find(
                 (x) => x.scaleCategory === UserScaleItemScaleCategoryEnum.Anger,
               )?.score ?? null;
 
+            const depression =
+              arr.find(
+                (x) =>
+                  x.scaleCategory === UserScaleItemScaleCategoryEnum.Depression,
+              )?.score ?? null;
+
+            const anxiety =
+              arr.find(
+                (x) =>
+                  x.scaleCategory === UserScaleItemScaleCategoryEnum.Anxiety,
+              )?.score ?? null;
+
             const createdAt = arr?.[0]?.createdAt;
 
-            return { session, anxietyDepression, anger, createdAt };
+            return { session, anger, depression, anxiety, createdAt };
           })
           .filter((x) => !Number.isNaN(x.session))
           .sort((a, b) => a.session - b.session);
@@ -608,10 +614,13 @@ export function UserDetail({ userId }: UserDetailProps) {
                     설문 차수
                   </th>
                   <th className="border-b border-border p-3 text-sm font-medium text-center">
-                    우울·불안 점수
+                    분노 점수
                   </th>
                   <th className="border-b border-border p-3 text-sm font-medium text-center">
-                    분노 점수
+                    우울 점수
+                  </th>
+                  <th className="border-b border-border p-3 text-sm font-medium text-center">
+                    불안 점수
                   </th>
                   <th className="border-b border-border p-3 text-sm font-medium text-center">
                     작성일
@@ -628,11 +637,15 @@ export function UserDetail({ userId }: UserDetailProps) {
                     </td>
 
                     <td className="border-b border-border p-3 text-sm font-medium text-center">
-                      {row.anxietyDepression ?? "-"}점
+                      {row.anger ?? "-"}점
                     </td>
 
                     <td className="border-b border-border p-3 text-sm font-medium text-center">
-                      {row.anger ?? "-"}점
+                      {row.depression ?? "-"}점
+                    </td>
+
+                    <td className="border-b border-border p-3 text-sm font-medium text-center">
+                      {row.anxiety ?? "-"}점
                     </td>
 
                     <td className="border-b border-border p-3 text-sm text-muted-foreground text-center">
