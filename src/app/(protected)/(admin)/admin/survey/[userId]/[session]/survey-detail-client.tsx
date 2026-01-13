@@ -13,12 +13,15 @@ import type {
   ScaleQuestionItemDto,
 } from "@/generated-api";
 
-type ScaleCategory = "ANXIETY_DEPRESSION" | "ANGER";
+type ScaleCategory = "ANGER" | "DEPRESSION" | "ANXIETY";
 
 const SCALE_TITLE: Record<ScaleCategory, string> = {
-  ANXIETY_DEPRESSION: "우울·불안 설문",
   ANGER: "분노 설문",
+  DEPRESSION: "우울 설문",
+  ANXIETY: "불안 설문",
 };
+
+const SCALE_ORDER: ScaleCategory[] = ["ANGER", "DEPRESSION", "ANXIETY"];
 
 export default function SurveyDetailClient({
   userId,
@@ -59,10 +62,14 @@ export default function SurveyDetailClient({
   const itemsByCategory = useMemo(() => {
     const items = (data?.items ?? {}) as Record<string, ScaleQuestionResultDto>;
     const mapped: Partial<Record<ScaleCategory, ScaleQuestionResultDto>> = {};
+
     for (const v of Object.values(items)) {
       const cat = v.scaleCategory as ScaleCategory;
-      if (cat === "ANXIETY_DEPRESSION" || cat === "ANGER") mapped[cat] = v;
+      if (cat === "ANGER" || cat === "DEPRESSION" || cat === "ANXIETY") {
+        mapped[cat] = v;
+      }
     }
+
     return mapped;
   }, [data]);
 
@@ -86,11 +93,13 @@ export default function SurveyDetailClient({
           </div>
         ) : (
           <div className="space-y-6">
-            <SurveyCard
-              title={SCALE_TITLE.ANXIETY_DEPRESSION}
-              dto={itemsByCategory.ANXIETY_DEPRESSION}
-            />
-            <SurveyCard title={SCALE_TITLE.ANGER} dto={itemsByCategory.ANGER} />
+            {SCALE_ORDER.map((cat) => (
+              <SurveyCard
+                key={cat}
+                title={SCALE_TITLE[cat]}
+                dto={itemsByCategory[cat]}
+              />
+            ))}
           </div>
         )}
       </main>
@@ -105,7 +114,14 @@ function SurveyCard({
   title: string;
   dto?: ScaleQuestionResultDto;
 }) {
-  const questions = (dto?.questions ?? []) as ScaleQuestionItemDto[];
+  const questions = useMemo(() => {
+    const qs = (dto?.questions ?? []) as ScaleQuestionItemDto[];
+    return qs.slice().sort((a, b) => {
+      const an = a.questionNumber ?? Number.MAX_SAFE_INTEGER;
+      const bn = b.questionNumber ?? Number.MAX_SAFE_INTEGER;
+      return an - bn;
+    });
+  }, [dto]);
 
   return (
     <Card className="rounded-sm">
