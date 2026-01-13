@@ -18,7 +18,7 @@ import type { ScaleQuestionResultDto } from ''
 
 // TODO: Update the object below with actual values
 const example = {
-  "scaleCategory": ANXIETY_DEPRESSION,
+  "scaleCategory": ANXIETY,
   "scaleScore": 15,
   "questions": null,
 } satisfies ScaleQuestionResultDto
