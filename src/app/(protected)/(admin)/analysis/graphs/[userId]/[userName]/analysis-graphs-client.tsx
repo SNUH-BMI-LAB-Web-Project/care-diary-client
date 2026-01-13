@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { LineChart } from "@/components/common/line-chart";
 import { adminUserApi } from "@/lib/api/client";
 
-type ScaleCategory = "ANXIETY_DEPRESSION" | "ANGER";
+type ScaleCategory = "ANXIETY" | "DEPRESSION" | "ANGER";
 
 type UserScaleItem = {
   scaleCategory: ScaleCategory;
@@ -55,7 +55,7 @@ export default function AnalysisGraphsClient({
     };
   }, [userId]);
 
-  const { anxietyDepressionData, angerData } = useMemo(() => {
+  const { anxietyData, depressionData, angerData } = useMemo(() => {
     const sessions = Object.keys(itemsBySession)
       .map(Number)
       .sort((a, b) => a - b);
@@ -64,19 +64,18 @@ export default function AnalysisGraphsClient({
       itemsBySession[String(session)]?.find((x) => x.scaleCategory === category)
         ?.score ?? null;
 
+    const buildSeries = (category: ScaleCategory) =>
+      sessions
+        .map((s) => {
+          const score = pickScore(s, category);
+          return score == null ? null : { session: s + 1, score };
+        })
+        .filter(Boolean) as { session: number; score: number }[];
+
     return {
-      anxietyDepressionData: sessions
-        .map((s) => {
-          const score = pickScore(s, "ANXIETY_DEPRESSION");
-          return score == null ? null : { session: s + 1, score };
-        })
-        .filter(Boolean) as { session: number; score: number }[],
-      angerData: sessions
-        .map((s) => {
-          const score = pickScore(s, "ANGER");
-          return score == null ? null : { session: s + 1, score };
-        })
-        .filter(Boolean) as { session: number; score: number }[],
+      anxietyData: buildSeries("ANXIETY"),
+      depressionData: buildSeries("DEPRESSION"),
+      angerData: buildSeries("ANGER"),
     };
   }, [itemsBySession]);
 
@@ -101,17 +100,14 @@ export default function AnalysisGraphsClient({
             {name} 님의 차수별 설문 척도 변화
           </h2>
           <p className="text-sm text-muted-foreground">
-            우울·불안, 분노 척도의 차수별 추이를 확인하세요
+            분노, 우울, 불안 척도의 차수별 추이를 확인하세요
           </p>
         </div>
 
         <div className="space-y-6">
-          <LineChart
-            title="우울·불안 척도"
-            data={anxietyDepressionData}
-            color="#3b82f6"
-          />
           <LineChart title="분노 척도" data={angerData} color="#ef4444" />
+          <LineChart title="우울 척도" data={depressionData} color="#8b5cf6" />
+          <LineChart title="불안 척도" data={anxietyData} color="#3b82f6" />
         </div>
       </main>
     </div>
