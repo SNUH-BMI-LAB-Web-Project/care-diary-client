@@ -47,7 +47,7 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
         <div className="flex items-center gap-8 ">
           <Link href="/home" className="flex items-center">
             <h1 className="text-xl font-bold cursor-pointer hover:opacity-80">
-              돌봄일기
+              돌봄일기 DEV
             </h1>
           </Link>
 
