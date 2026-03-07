@@ -56,6 +56,12 @@ type MyPageUserData = {
   disabilitySeverity?: CurrentUserResponseDisabilitySeverityEnum;
 
   socialWelfareServices?: SocialWelfareService[];
+
+  careManager?: {
+    managerId: string;
+    name: string;
+    email: string;
+  };
 };
 
 function Field({
@@ -85,6 +91,15 @@ function Field({
   );
 }
 
+const formatDate = (value?: string | Date | null) => {
+  if (!value) return "-";
+  if (typeof value === "string") return value.slice(0, 10);
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toISOString().slice(0, 10);
+};
+
 export default function MyPage() {
   const [userData, setUserData] = useState<MyPageUserData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,7 +117,7 @@ export default function MyPage() {
           role: d.role,
 
           gender: d.gender,
-          birth: d.birthDate.toISOString().slice(0, 10),
+          birth: formatDate(d.birthDate),
           address: d.address?.replaceAll("//", "").replace(/\s+/g, " ").trim(),
 
           mainDiagnosis: d.primaryDiagnosis,
@@ -116,9 +131,7 @@ export default function MyPage() {
 
           medicalCoverage: d.medicalCoverage,
           specialCaseRegistered: d.specialCaseRegistered,
-          specialCaseRegisteredDate: d.specialCaseRegisteredDate
-            ? d.specialCaseRegisteredDate.toISOString().slice(0, 10)
-            : undefined,
+          specialCaseRegisteredDate: formatDate(d.specialCaseRegisteredDate),
 
           disabilityRegistered: d.disabilityRegistered,
           disabilityStatus: d.disabilityStatus,
@@ -127,6 +140,14 @@ export default function MyPage() {
 
           socialWelfareServices:
             (d.socialWelfareServiceLabels as SocialWelfareService[]) ?? [],
+
+          careManager: d.careManager
+            ? {
+                managerId: d.careManager.managerId,
+                name: d.careManager.name,
+                email: d.careManager.email,
+              }
+            : undefined,
         });
       })
       .finally(() => setLoading(false));
@@ -152,7 +173,7 @@ export default function MyPage() {
       userData.medicalCoverage)
     : "-";
 
-  const isAdmin = userData.role === UserRole.ADMIN;
+  const isUser = userData.role === UserRole.USER;
 
   return (
     <div className="min-h-screen bg-secondary">
@@ -160,7 +181,6 @@ export default function MyPage() {
 
       <main className="container max-w-5xl py-8 mx-auto space-y-6">
         <div className="mx-auto max-w-3xl space-y-6">
-          {/* 1. 상단 프로필 */}
           <Card className="rounded-sm">
             <CardContent className="flex items-center justify-between py-6">
               <div className="flex items-center gap-6">
@@ -180,7 +200,6 @@ export default function MyPage() {
             </CardContent>
           </Card>
 
-          {/* 2. 기본 정보 */}
           <Card className="rounded-sm">
             <CardHeader>
               <CardTitle>기본 정보</CardTitle>
@@ -200,8 +219,7 @@ export default function MyPage() {
             </CardContent>
           </Card>
 
-          {/* 3. 환자 정보 (ADMIN 제외) */}
-          {!isAdmin && (
+          {isUser && (
             <Card className="rounded-sm">
               <CardHeader>
                 <CardTitle>환자 정보</CardTitle>
@@ -349,6 +367,32 @@ export default function MyPage() {
                     </div>
                   </div>
                 </section>
+              </CardContent>
+            </Card>
+          )}
+
+          {isUser && (
+            <Card className="rounded-sm">
+              <CardHeader>
+                <CardTitle>담당 관리자</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {userData.careManager ? (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Field
+                      label="이름"
+                      value={userData.careManager.name || "-"}
+                    />
+                    <Field
+                      label="이메일"
+                      value={userData.careManager.email || "-"}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    지정된 담당 관리자가 없습니다.
+                  </p>
+                )}
               </CardContent>
             </Card>
           )}
