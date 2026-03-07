@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/home/calendar";
+import { UserWordCloud } from "@/components/admin/user-word-cloud";
 import {
   EMOTION_LABELS,
   Emotion,
@@ -20,6 +21,7 @@ import {
   AdminDiaryDto,
   UserScaleItem,
   UserScaleItemScaleCategoryEnum,
+  AdminUserWordCloudResponse,
 } from "@/generated-api";
 
 import { ChevronDown, ChevronUp, ExternalLink } from "lucide-react";
@@ -48,6 +50,36 @@ type UserDetailData = {
 interface UserDetailProps {
   userId: string;
 }
+
+const USE_MOCK_WORD_CLOUD = true;
+
+const MOCK_WORD_CLOUD: AdminUserWordCloudResponse = {
+  userId: "mock-user",
+  totalDiaries: 18,
+  totalTokens: 542,
+  items: [
+    { word: "치료", count: 40 },
+    { word: "경우", count: 32 },
+    { word: "신청", count: 30 },
+    { word: "서비스", count: 28 },
+    { word: "지원", count: 26 },
+    { word: "이용", count: 24 },
+    { word: "복지", count: 22 },
+    { word: "서류", count: 20 },
+    { word: "대상", count: 18 },
+    { word: "병원", count: 16 },
+    { word: "가족", count: 15 },
+    { word: "상담", count: 14 },
+    { word: "불안", count: 13 },
+    { word: "간병", count: 12 },
+    { word: "기준", count: 11 },
+    { word: "방법", count: 10 },
+    { word: "예정", count: 9 },
+    { word: "신청서", count: 8 },
+    { word: "학업", count: 7 },
+    { word: "건강", count: 7 },
+  ],
+};
 
 export function UserDetail({ userId }: UserDetailProps) {
   const router = useRouter();
@@ -79,11 +111,18 @@ export function UserDetail({ userId }: UserDetailProps) {
     {},
   );
 
+  const [wordCloud, setWordCloud] = useState<AdminUserWordCloudResponse | null>(
+    null,
+  );
+  const [wordCloudLoading, setWordCloudLoading] = useState(false);
+
   useEffect(() => {
     let mounted = true;
 
     async function run() {
       setLoading(true);
+      setWordCloudLoading(true);
+
       try {
         const [userRes, scaleRes] = await Promise.all([
           adminUserApi.findUserById({ userId }),
@@ -126,8 +165,34 @@ export function UserDetail({ userId }: UserDetailProps) {
           .sort((a, b) => a.session - b.session);
 
         if (mounted) setScales(sessions);
+
+        let wordCloudData: AdminUserWordCloudResponse | null = null;
+
+        if (USE_MOCK_WORD_CLOUD) {
+          wordCloudData = {
+            ...MOCK_WORD_CLOUD,
+            userId,
+          };
+        } else {
+          try {
+            const wordCloudRes = await adminUserApi.findUserWordCloud({
+              userId,
+            });
+            wordCloudData = wordCloudRes?.data ?? null;
+          } catch {
+            wordCloudData = {
+              ...MOCK_WORD_CLOUD,
+              userId,
+            };
+          }
+        }
+
+        if (mounted) setWordCloud(wordCloudData);
       } finally {
-        if (mounted) setLoading(false);
+        if (mounted) {
+          setLoading(false);
+          setWordCloudLoading(false);
+        }
       }
     }
 
@@ -189,7 +254,7 @@ export function UserDetail({ userId }: UserDetailProps) {
           welfareServiceId: params.welfareServiceId,
         });
       }
-    } catch (e) {
+    } catch {
       setServiceVisibility((p) => ({ ...p, [key]: prevVisible }));
     } finally {
       setServicePending((p) => ({ ...p, [key]: false }));
@@ -276,7 +341,7 @@ export function UserDetail({ userId }: UserDetailProps) {
         </Card>
       )}
 
-      <div className="mb-6 grid grid-cols-4 gap-4 items-stretch">
+      <div className="mb-6 grid grid-cols-1 gap-4 xl:grid-cols-3 items-stretch">
         <Card className="rounded-sm h-full flex flex-col">
           <CardHeader>
             <CardTitle className="text-base">캘린더</CardTitle>
@@ -299,7 +364,7 @@ export function UserDetail({ userId }: UserDetailProps) {
           </CardContent>
         </Card>
 
-        <div className="col-span-3 h-full grid grid-rows-3 gap-4">
+        <div className="h-full grid grid-rows-3 gap-4">
           <Card className="rounded-sm h-full">
             <div className="flex items-center justify-between px-6 py-4 h-full">
               <CardTitle className="text-base">
@@ -323,12 +388,12 @@ export function UserDetail({ userId }: UserDetailProps) {
           </Card>
 
           <Card className="border-border bg-card rounded-sm h-full">
-            <div className="flex items-center justify-between px-6 py-4 h-full">
+            <div className="flex items-center justify-between px-6 py-4 h-full gap-3">
               <CardTitle className="text-base">
                 {UI_TEXT.HOME.EMOTION_DISTRIBUTION}
               </CardTitle>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap justify-end">
                 {Object.values(Emotion).map((emotion) => {
                   const config = EMOTION_CONFIG[emotion];
                   const Icon = config.icon;
@@ -349,6 +414,12 @@ export function UserDetail({ userId }: UserDetailProps) {
             </div>
           </Card>
         </div>
+
+        <UserWordCloud
+          data={wordCloud}
+          loading={wordCloudLoading}
+          isDemo={USE_MOCK_WORD_CLOUD}
+        />
       </div>
 
       {selectedDiaries.length > 0 && selectedDate && (
@@ -561,8 +632,7 @@ export function UserDetail({ userId }: UserDetailProps) {
             <Button
               type="button"
               variant="outline"
-              className="w-full rounded-sm py-4 text-sm font-medium
-                   flex items-center justify-center gap-2"
+              className="w-full rounded-sm py-4 text-sm font-medium flex items-center justify-center gap-2"
               onClick={() => setShowAllDiaries((v) => !v)}
             >
               {showAllDiaries ? (
@@ -670,7 +740,7 @@ export function UserDetail({ userId }: UserDetailProps) {
                 {scales.length === 0 && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={6}
                       className="border-b border-border p-6 text-sm text-muted-foreground text-center"
                     >
                       설문 데이터가 없습니다.
