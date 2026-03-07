@@ -10,7 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import Link from "next/link";
-import { LogOut, User } from "lucide-react";
+import { LogOut, ShieldCheck, User, HeartHandshake } from "lucide-react";
 import { clearOAuthSession, getOAuthSession } from "@/lib/auth-storage";
 import { decodeJwtPayload } from "@/lib/jwt";
 
@@ -19,56 +19,95 @@ interface NavbarProps {
   onTabChange?: (tab: string) => void;
 }
 
+type AuthRole = "ADMIN" | "CARE_MANAGER" | "USER";
+
 type AuthJwtPayload = {
   name?: string;
-  role?: "ADMIN" | "USER";
+  role?: AuthRole;
 };
 
 export function Navbar({ activeTab, onTabChange }: NavbarProps) {
   const [userName, setUserName] = useState("사용자");
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [role, setRole] = useState<AuthRole | null>(null);
 
   useEffect(() => {
     const { token } = getOAuthSession();
     const payload = token ? decodeJwtPayload<AuthJwtPayload>(token) : null;
 
     const nextName = payload?.name?.trim() ? payload.name.trim() : "사용자";
-    const nextIsAdmin = payload?.role === "ADMIN";
+    const nextRole = payload?.role ?? null;
 
     setUserName(nextName);
-    setIsAdmin(nextIsAdmin);
+    setRole(nextRole);
   }, []);
+
+  const canManageUsage = role === "ADMIN";
+  const showAdminTabs = role === "ADMIN" && !!onTabChange;
 
   const initial = userName.charAt(0).toUpperCase();
 
+  const roleLabel =
+    role === "ADMIN"
+      ? "총괄 관리자"
+      : role === "CARE_MANAGER"
+        ? "담당 관리자"
+        : null;
+
+  const RoleIcon =
+    role === "ADMIN"
+      ? ShieldCheck
+      : role === "CARE_MANAGER"
+        ? HeartHandshake
+        : null;
+
   return (
     <header className="sticky top-0 z-10 border-b border-border bg-white">
-      <div className="flex h-16 items-center justify-between px-8">
-        <div className="flex items-center gap-8 ">
+      <div className="flex h-18 items-center justify-between px-6">
+        <div className="flex items-center gap-8">
           <Link href="/home" className="flex items-center">
-            <h1 className="text-xl font-bold cursor-pointer hover:opacity-80">
-              돌봄일기 DEV
-            </h1>
+            <div className="flex flex-col leading-none">
+              <h1 className="text-xl font-bold cursor-pointer hover:opacity-80">
+                돌봄일기
+              </h1>
+
+              {roleLabel && RoleIcon && (
+                <div className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <RoleIcon className="h-3.5 w-3.5" />
+                  <span>{roleLabel}</span>
+                </div>
+              )}
+            </div>
           </Link>
 
-          {isAdmin && onTabChange && (
-            <div className="flex gap-1">
-              <Button
-                variant={activeTab === "users" ? "default" : "ghost"}
-                size="sm"
+          {showAdminTabs && (
+            <div className="flex items-center rounded-lg border border-border bg-muted/50 p-1">
+              <button
+                type="button"
                 onClick={() => onTabChange("users")}
-                className="rounded-sm"
+                className={[
+                  "h-9 rounded-md px-4 text-sm font-medium transition",
+                  activeTab === "users"
+                    ? "bg-white text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground",
+                ].join(" ")}
               >
                 사용자 관리
-              </Button>
-              <Button
-                variant={activeTab === "usage" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => onTabChange("usage")}
-                className="rounded-sm"
-              >
-                사용량 관리
-              </Button>
+              </button>
+
+              {canManageUsage && (
+                <button
+                  type="button"
+                  onClick={() => onTabChange("usage")}
+                  className={[
+                    "h-9 rounded-md px-4 text-sm font-medium transition",
+                    activeTab === "usage"
+                      ? "bg-white text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  ].join(" ")}
+                >
+                  사용량 관리
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -85,6 +124,7 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
               <span className="text-sm font-medium">{userName}</span>
             </Button>
           </PopoverTrigger>
+
           <PopoverContent
             align="end"
             sideOffset={20}
@@ -101,6 +141,7 @@ export function Navbar({ activeTab, onTabChange }: NavbarProps) {
                   마이페이지
                 </Button>
               </Link>
+
               <Button
                 variant="ghost"
                 className="w-full justify-start gap-2 rounded-sm text-destructive hover:text-destructive"
