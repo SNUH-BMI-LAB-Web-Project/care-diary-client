@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE="https://diary-api.snuh-bmilab.ai.kr"
+BASE="https://dev-diary-api.snuh-bmilab.ai.kr"
 
 CANDIDATES=(
   "$BASE/v3/api-docs"

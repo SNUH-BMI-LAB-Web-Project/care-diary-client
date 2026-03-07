@@ -30,6 +30,7 @@ Name | Type
 `disabilityType` | string
 `disabilitySeverity` | string
 `socialWelfareServiceLabels` | Array&lt;string&gt;
+`careManager` | [CareManagerResponse](CareManagerResponse.md)
 
 ## Example
 
@@ -61,6 +62,7 @@ const example = {
   "disabilityType": 정신장애,
   "disabilitySeverity": NOT_SEVERE,
   "socialWelfareServiceLabels": [CAREGIVER_COST, SPECIAL_DIET_PURCHASE],
+  "careManager": null,
 } satisfies CurrentUserResponse
 
 console.log(example)

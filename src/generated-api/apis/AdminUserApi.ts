@@ -19,6 +19,7 @@ import type {
   CommonResponseAdminUserFindAllResponse,
   CommonResponseAdminUserScaleFindAllResponse,
   CommonResponseAdminUserScaleQuestionResultResponse,
+  CommonResponseAdminUserWordCloudResponse,
 } from '../models/index';
 import {
     CommonResponseAdminUserDetailResponseFromJSON,
@@ -29,6 +30,8 @@ import {
     CommonResponseAdminUserScaleFindAllResponseToJSON,
     CommonResponseAdminUserScaleQuestionResultResponseFromJSON,
     CommonResponseAdminUserScaleQuestionResultResponseToJSON,
+    CommonResponseAdminUserWordCloudResponseFromJSON,
+    CommonResponseAdminUserWordCloudResponseToJSON,
 } from '../models/index';
 
 export interface FindScaleQuestionResultRequest {
@@ -41,6 +44,10 @@ export interface FindUserByIdRequest {
 }
 
 export interface FindUserScalesRequest {
+    userId: string;
+}
+
+export interface FindUserWordCloudRequest {
     userId: string;
 }
 
@@ -237,6 +244,53 @@ export class AdminUserApi extends runtime.BaseAPI {
      */
     async findUserScales(requestParameters: FindUserScalesRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CommonResponseAdminUserScaleFindAllResponse> {
         const response = await this.findUserScalesRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * 특정 사용자의 일기에서 추출한 워드클라우드 데이터를 조회합니다.
+     * 사용자 워드클라우드 조회
+     */
+    async findUserWordCloudRaw(requestParameters: FindUserWordCloudRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CommonResponseAdminUserWordCloudResponse>> {
+        if (requestParameters['userId'] == null) {
+            throw new runtime.RequiredError(
+                'userId',
+                'Required parameter "userId" was null or undefined when calling findUserWordCloud().'
+            );
+        }
+
+        const queryParameters: any = {};
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("JWT", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/v1/admin/users/{userId}/wordcloud`;
+        urlPath = urlPath.replace(`{${"userId"}}`, encodeURIComponent(String(requestParameters['userId'])));
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => CommonResponseAdminUserWordCloudResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * 특정 사용자의 일기에서 추출한 워드클라우드 데이터를 조회합니다.
+     * 사용자 워드클라우드 조회
+     */
+    async findUserWordCloud(requestParameters: FindUserWordCloudRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CommonResponseAdminUserWordCloudResponse> {
+        const response = await this.findUserWordCloudRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

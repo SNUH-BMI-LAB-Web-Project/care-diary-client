@@ -7,7 +7,6 @@ import {
 } from "@/generated-api";
 
 export type Emotion = "HAPPY" | "LOVE" | "SAD";
-export type Gender = "MALE" | "FEMALE";
 
 export enum UserRole {
   USER = "USER",
@@ -18,11 +17,6 @@ export const Emotion = {
   HAPPY: "HAPPY" as const,
   LOVE: "LOVE" as const,
   SAD: "SAD" as const,
-};
-
-export const Gender = {
-  MALE: "MALE" as const,
-  FEMALE: "FEMALE" as const,
 };
 
 export const EMOTION_LABELS: Record<Emotion, string> = {

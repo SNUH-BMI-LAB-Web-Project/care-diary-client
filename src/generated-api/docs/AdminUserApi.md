@@ -8,6 +8,7 @@ All URIs are relative to *https://diary-api.snuh-bmilab.ai.kr*
 | [**findScaleQuestionResult**](AdminUserApi.md#findscalequestionresult) | **GET** /v1/admin/users/{userId}/scale-questions | 사용자 척도 설문 답변 조회 |
 | [**findUserById**](AdminUserApi.md#finduserbyid) | **GET** /v1/admin/users/{userId} | 사용자 상세 조회 |
 | [**findUserScales**](AdminUserApi.md#finduserscales) | **GET** /v1/admin/users/{userId}/scales | 사용자 척도 점수 조회 |
+| [**findUserWordCloud**](AdminUserApi.md#finduserwordcloud) | **GET** /v1/admin/users/{userId}/wordcloud | 사용자 워드클라우드 조회 |
 
 
 
@@ -295,6 +296,80 @@ example().catch(console.error);
 | Status code | Description | Response headers |
 |-------------|-------------|------------------|
 | **200** | 척도 결과 조회 성공 |  -  |
+| **401** | 인증 실패 |  -  |
+| **403** | 권한 없음 |  -  |
+| **404** | 사용자를 찾을 수 없음 |  -  |
+
+[[Back to top]](#) [[Back to API list]](../README.md#api-endpoints) [[Back to Model list]](../README.md#models) [[Back to README]](../README.md)
+
+
+## findUserWordCloud
+
+> CommonResponseAdminUserWordCloudResponse findUserWordCloud(userId)
+
+사용자 워드클라우드 조회
+
+특정 사용자의 일기에서 추출한 워드클라우드 데이터를 조회합니다.
+
+### Example
+
+```ts
+import {
+  Configuration,
+  AdminUserApi,
+} from '';
+import type { FindUserWordCloudRequest } from '';
+
+async function example() {
+  console.log("🚀 Testing  SDK...");
+  const config = new Configuration({ 
+    // Configure HTTP bearer authorization: JWT
+    accessToken: "YOUR BEARER TOKEN",
+  });
+  const api = new AdminUserApi(config);
+
+  const body = {
+    // string | 사용자 ID
+    userId: 38400000-8cf0-11bd-b23e-10b96e4ef00d,
+  } satisfies FindUserWordCloudRequest;
+
+  try {
+    const data = await api.findUserWordCloud(body);
+    console.log(data);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+// Run the test
+example().catch(console.error);
+```
+
+### Parameters
+
+
+| Name | Type | Description  | Notes |
+|------------- | ------------- | ------------- | -------------|
+| **userId** | `string` | 사용자 ID | [Defaults to `undefined`] |
+
+### Return type
+
+[**CommonResponseAdminUserWordCloudResponse**](CommonResponseAdminUserWordCloudResponse.md)
+
+### Authorization
+
+[JWT](../README.md#JWT)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: `*/*`
+
+
+### HTTP response details
+| Status code | Description | Response headers |
+|-------------|-------------|------------------|
+| **200** | 워드클라우드 조회 성공 |  -  |
 | **401** | 인증 실패 |  -  |
 | **403** | 권한 없음 |  -  |
 | **404** | 사용자를 찾을 수 없음 |  -  |

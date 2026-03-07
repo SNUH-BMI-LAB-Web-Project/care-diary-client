@@ -28,6 +28,8 @@ Name | Type
 `disabilityType` | string
 `disabilitySeverity` | string
 `socialWelfareServiceLabels` | Array&lt;string&gt;
+`managerId` | string
+`adminCode` | string
 
 ## Example
 
@@ -57,6 +59,8 @@ const example = {
   "disabilityType": 정신장애,
   "disabilitySeverity": NOT_SEVERE,
   "socialWelfareServiceLabels": [CAREGIVER_COST, SPECIAL_DIET_PURCHASE],
+  "managerId": 550e8400-e29b-41d4-a716-446655440000,
+  "adminCode": ABCD1234,
 } satisfies UserRegisterRequest
 
 console.log(example)

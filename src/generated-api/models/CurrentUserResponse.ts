@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime';
+import type { CareManagerResponse } from './CareManagerResponse';
+import {
+    CareManagerResponseFromJSON,
+    CareManagerResponseFromJSONTyped,
+    CareManagerResponseToJSON,
+    CareManagerResponseToJSONTyped,
+} from './CareManagerResponse';
+
 /**
  * 현재 사용자 정보 응답
  * @export
@@ -157,6 +165,12 @@ export interface CurrentUserResponse {
      * @memberof CurrentUserResponse
      */
     socialWelfareServiceLabels?: Array<string>;
+    /**
+     * 담당 관리자 정보
+     * @type {CareManagerResponse}
+     * @memberof CurrentUserResponse
+     */
+    careManager?: CareManagerResponse;
 }
 
 
@@ -165,7 +179,8 @@ export interface CurrentUserResponse {
  */
 export const CurrentUserResponseRoleEnum = {
     User: 'USER',
-    Admin: 'ADMIN'
+    Admin: 'ADMIN',
+    CareManager: 'CARE_MANAGER'
 } as const;
 export type CurrentUserResponseRoleEnum = typeof CurrentUserResponseRoleEnum[keyof typeof CurrentUserResponseRoleEnum];
 
@@ -257,6 +272,7 @@ export function CurrentUserResponseFromJSONTyped(json: any, ignoreDiscriminator:
         'disabilityType': json['disabilityType'] == null ? undefined : json['disabilityType'],
         'disabilitySeverity': json['disabilitySeverity'] == null ? undefined : json['disabilitySeverity'],
         'socialWelfareServiceLabels': json['socialWelfareServiceLabels'] == null ? undefined : json['socialWelfareServiceLabels'],
+        'careManager': json['careManager'] == null ? undefined : CareManagerResponseFromJSON(json['careManager']),
     };
 }
 
@@ -294,6 +310,7 @@ export function CurrentUserResponseToJSONTyped(value?: CurrentUserResponse | nul
         'disabilityType': value['disabilityType'],
         'disabilitySeverity': value['disabilitySeverity'],
         'socialWelfareServiceLabels': value['socialWelfareServiceLabels'],
+        'careManager': CareManagerResponseToJSON(value['careManager']),
     };
 }
 

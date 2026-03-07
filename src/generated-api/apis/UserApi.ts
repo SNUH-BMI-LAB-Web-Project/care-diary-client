@@ -15,11 +15,14 @@
 
 import * as runtime from '../runtime';
 import type {
+  CommonResponseCareManagerFindAllResponse,
   CommonResponseCurrentUserResponse,
   CommonResponseUserRegisterResponse,
   UserRegisterRequest,
 } from '../models/index';
 import {
+    CommonResponseCareManagerFindAllResponseFromJSON,
+    CommonResponseCareManagerFindAllResponseToJSON,
     CommonResponseCurrentUserResponseFromJSON,
     CommonResponseCurrentUserResponseToJSON,
     CommonResponseUserRegisterResponseFromJSON,
@@ -30,6 +33,10 @@ import {
 
 export interface RegisterRequest {
     userRegisterRequest: UserRegisterRequest;
+}
+
+export interface SearchCareManagersRequest {
+    search?: string;
 }
 
 /**
@@ -122,6 +129,49 @@ export class UserApi extends runtime.BaseAPI {
      */
     async register(requestParameters: RegisterRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CommonResponseUserRegisterResponse> {
         const response = await this.registerRaw(requestParameters, initOverrides);
+        return await response.value();
+    }
+
+    /**
+     * Role이 CARE_MANAGER인 사용자를 이름으로 검색합니다. search가 비어있으면 전체 목록을 반환합니다.
+     * 담당 관리자 목록 조회
+     */
+    async searchCareManagersRaw(requestParameters: SearchCareManagersRequest, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<runtime.ApiResponse<CommonResponseCareManagerFindAllResponse>> {
+        const queryParameters: any = {};
+
+        if (requestParameters['search'] != null) {
+            queryParameters['search'] = requestParameters['search'];
+        }
+
+        const headerParameters: runtime.HTTPHeaders = {};
+
+        if (this.configuration && this.configuration.accessToken) {
+            const token = this.configuration.accessToken;
+            const tokenString = await token("JWT", []);
+
+            if (tokenString) {
+                headerParameters["Authorization"] = `Bearer ${tokenString}`;
+            }
+        }
+
+        let urlPath = `/v1/users/care-managers`;
+
+        const response = await this.request({
+            path: urlPath,
+            method: 'GET',
+            headers: headerParameters,
+            query: queryParameters,
+        }, initOverrides);
+
+        return new runtime.JSONApiResponse(response, (jsonValue) => CommonResponseCareManagerFindAllResponseFromJSON(jsonValue));
+    }
+
+    /**
+     * Role이 CARE_MANAGER인 사용자를 이름으로 검색합니다. search가 비어있으면 전체 목록을 반환합니다.
+     * 담당 관리자 목록 조회
+     */
+    async searchCareManagers(requestParameters: SearchCareManagersRequest = {}, initOverrides?: RequestInit | runtime.InitOverrideFunction): Promise<CommonResponseCareManagerFindAllResponse> {
+        const response = await this.searchCareManagersRaw(requestParameters, initOverrides);
         return await response.value();
     }
 

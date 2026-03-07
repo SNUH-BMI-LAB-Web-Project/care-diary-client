@@ -145,6 +145,18 @@ export interface UserRegisterRequest {
      * @memberof UserRegisterRequest
      */
     socialWelfareServiceLabels?: Array<string>;
+    /**
+     * 담당 관리자 ID
+     * @type {string}
+     * @memberof UserRegisterRequest
+     */
+    managerId?: string;
+    /**
+     * 총괄 관리자 인증 코드
+     * @type {string}
+     * @memberof UserRegisterRequest
+     */
+    adminCode?: string;
 }
 
 
@@ -153,7 +165,8 @@ export interface UserRegisterRequest {
  */
 export const UserRegisterRequestRoleEnum = {
     User: 'USER',
-    Admin: 'ADMIN'
+    Admin: 'ADMIN',
+    CareManager: 'CARE_MANAGER'
 } as const;
 export type UserRegisterRequestRoleEnum = typeof UserRegisterRequestRoleEnum[keyof typeof UserRegisterRequestRoleEnum];
 
@@ -241,6 +254,8 @@ export function UserRegisterRequestFromJSONTyped(json: any, ignoreDiscriminator:
         'disabilityType': json['disabilityType'] == null ? undefined : json['disabilityType'],
         'disabilitySeverity': json['disabilitySeverity'] == null ? undefined : json['disabilitySeverity'],
         'socialWelfareServiceLabels': json['socialWelfareServiceLabels'] == null ? undefined : json['socialWelfareServiceLabels'],
+        'managerId': json['managerId'] == null ? undefined : json['managerId'],
+        'adminCode': json['adminCode'] == null ? undefined : json['adminCode'],
     };
 }
 
@@ -276,6 +291,8 @@ export function UserRegisterRequestToJSONTyped(value?: UserRegisterRequest | nul
         'disabilityType': value['disabilityType'],
         'disabilitySeverity': value['disabilitySeverity'],
         'socialWelfareServiceLabels': value['socialWelfareServiceLabels'],
+        'managerId': value['managerId'],
+        'adminCode': value['adminCode'],
     };
 }
 
