@@ -36,7 +36,7 @@ const PROVIDER_CONFIG = {
   naver: {
     label: "네이버로 계속하기",
     bgColor: "bg-[#03C75A] hover:bg-[#02b350]",
-    textColor: "text-white",
+    textColor: "text-white hover:text-white",
     icon: (
       <svg className="h-5 w-5" viewBox="0 0 24 24" fill="white">
         <path d="M16.273 12.845 7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727v12.845Z" />
