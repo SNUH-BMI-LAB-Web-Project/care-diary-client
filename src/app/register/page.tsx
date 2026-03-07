@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -53,6 +53,16 @@ import {
   SOCIAL_WELFARE_LABELS,
   type SocialWelfareService,
 } from "@/lib/constants";
+import CareManagerSearchModal from "@/components/register/care-manager-search-modal";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { HelpCircle } from "lucide-react";
+
+type RegisterRole = UserRegisterRequestRoleEnum;
 
 type RegisterFormData = Omit<
   UserRegisterRequest,
@@ -61,7 +71,31 @@ type RegisterFormData = Omit<
   birthDate: string;
   specialCaseRegisteredDate?: string;
   socialWelfareServiceLabels: SocialWelfareService[];
+  managerId?: string;
+  adminCode?: string;
 };
+
+const ROLE_OPTIONS: {
+  value: RegisterRole;
+  label: string;
+  description: string;
+}[] = [
+  {
+    value: UserRegisterRequestRoleEnum.User,
+    label: "사용자",
+    description: "환자 정보 입력 후 설문으로 이동",
+  },
+  {
+    value: UserRegisterRequestRoleEnum.CareManager,
+    label: "담당 관리자",
+    description: "담당 사용자만 관리 가능한 관리자",
+  },
+  {
+    value: UserRegisterRequestRoleEnum.Admin,
+    label: "총괄 관리자",
+    description: "전체 관리자/사용자 관리 가능",
+  },
+];
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -70,6 +104,10 @@ export default function RegisterPage() {
   const [authReady, setAuthReady] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [provider, setProvider] = useState<OAuthProvider | null>(null);
+
+  const [selectedRole, setSelectedRole] = useState<RegisterRole>(
+    UserRegisterRequestRoleEnum.User,
+  );
 
   useEffect(() => {
     const s = getOAuthSession();
@@ -108,23 +146,43 @@ export default function RegisterPage() {
     disabilitySeverity: undefined,
 
     socialWelfareServiceLabels: [],
+
+    managerId: "",
+    adminCode: "",
   });
 
   const [birthYear, setBirthYear] = useState("");
   const [birthMonth, setBirthMonth] = useState("");
   const [birthDay, setBirthDay] = useState("");
 
-  const YEARS = Array.from({ length: 100 }, (_, i) =>
-    String(new Date().getFullYear() - i),
+  const YEARS = useMemo(
+    () =>
+      Array.from({ length: 100 }, (_, i) =>
+        String(new Date().getFullYear() - i),
+      ),
+    [],
   );
 
-  const MONTHS = Array.from({ length: 12 }, (_, i) =>
-    String(i + 1).padStart(2, "0"),
+  const MONTHS = useMemo(
+    () => Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0")),
+    [],
   );
 
-  const DAYS = Array.from({ length: 31 }, (_, i) =>
-    String(i + 1).padStart(2, "0"),
+  const DAYS = useMemo(
+    () => Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")),
+    [],
   );
+
+  const [managerModalOpen, setManagerModalOpen] = useState(false);
+  const [selectedManagerName, setSelectedManagerName] = useState("");
+  const [selectedManagerEmail, setSelectedManagerEmail] = useState("");
+
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      role: selectedRole,
+    }));
+  }, [selectedRole]);
 
   useEffect(() => {
     if (birthYear && birthMonth && birthDay) {
@@ -156,7 +214,19 @@ export default function RegisterPage() {
     setReadonlyEmail(nextEmail);
   }, [authReady, token, oauthType, router]);
 
+  const isUser = formData.role === UserRegisterRequestRoleEnum.User;
+  const isCareManager =
+    formData.role === UserRegisterRequestRoleEnum.CareManager;
   const isAdmin = formData.role === UserRegisterRequestRoleEnum.Admin;
+  const isManagerRole = isCareManager || isAdmin;
+
+  useEffect(() => {
+    if (!isUser) {
+      setFormData((prev) => ({ ...prev, managerId: "" }));
+      setSelectedManagerName("");
+      setSelectedManagerEmail("");
+    }
+  }, [isUser]);
 
   const isBaseValid =
     formData.name.trim().length > 0 &&
@@ -164,9 +234,9 @@ export default function RegisterPage() {
     !!formData.birthDate &&
     formData.address.trim().length > 0;
 
-  const userExtraValid = true;
+  const isAdminCodeValid = !isManagerRole || !!formData.adminCode?.trim();
 
-  const isFormValid = isAdmin ? isBaseValid : isBaseValid && userExtraValid;
+  const isFormValid = isBaseValid && isAdminCodeValid;
 
   const toggleSocialService = (key: SocialWelfareService) => {
     setFormData((prev) => {
@@ -184,10 +254,85 @@ export default function RegisterPage() {
 
   const cleanEmptyStringToUndefined = <T extends object>(obj: T): T => {
     const out = { ...obj } as Record<string, unknown>;
+
     for (const k of Object.keys(out)) {
       if (out[k] === "") out[k] = undefined;
     }
+
     return out as T;
+  };
+
+  const buildRegisterRequest = (): UserRegisterRequest => {
+    const baseRequired = {
+      name: formData.name,
+      role: formData.role,
+      gender: formData.gender,
+      birthDate: new Date(formData.birthDate),
+      address: formData.address,
+    } satisfies Pick<
+      UserRegisterRequest,
+      "name" | "role" | "gender" | "birthDate" | "address"
+    >;
+
+    if (isUser) {
+      return cleanEmptyStringToUndefined<UserRegisterRequest>({
+        ...baseRequired,
+
+        primaryDiagnosis: formData.primaryDiagnosis,
+        educationBeforeOnset: formData.educationBeforeOnset,
+        previousDiagnosis: formData.previousDiagnosis,
+        diagnosisYearMonth: formData.diagnosisYearMonth,
+        diagnosisHospital: formData.diagnosisHospital,
+        chiefComplaint: formData.chiefComplaint,
+        currentHospital: formData.currentHospital,
+        currentResidence: formData.currentResidence,
+        medicalCoverage: formData.medicalCoverage,
+
+        specialCaseRegistered: formData.specialCaseRegistered,
+        specialCaseRegisteredDate: formData.specialCaseRegistered
+          ? formData.specialCaseRegisteredDate
+            ? new Date(formData.specialCaseRegisteredDate)
+            : undefined
+          : undefined,
+
+        disabilityRegistered: formData.disabilityRegistered,
+        disabilityStatus: formData.disabilityStatus,
+        disabilityType: formData.disabilityType,
+        disabilitySeverity: formData.disabilitySeverity,
+
+        socialWelfareServiceLabels: formData.socialWelfareServiceLabels ?? [],
+
+        managerId: formData.managerId,
+        adminCode: undefined,
+      });
+    }
+
+    return cleanEmptyStringToUndefined<UserRegisterRequest>({
+      ...baseRequired,
+
+      primaryDiagnosis: undefined,
+      educationBeforeOnset: undefined,
+      previousDiagnosis: undefined,
+      diagnosisYearMonth: undefined,
+      diagnosisHospital: undefined,
+      chiefComplaint: undefined,
+      currentHospital: undefined,
+      currentResidence: undefined,
+      medicalCoverage: undefined,
+
+      specialCaseRegistered: undefined,
+      specialCaseRegisteredDate: undefined,
+
+      disabilityRegistered: undefined,
+      disabilityStatus: undefined,
+      disabilityType: undefined,
+      disabilitySeverity: undefined,
+
+      socialWelfareServiceLabels: [],
+
+      managerId: undefined,
+      adminCode: formData.adminCode,
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -201,72 +346,9 @@ export default function RegisterPage() {
     if (!formData.birthDate) return;
 
     setIsSubmitting(true);
+
     try {
-      const isAdmin = formData.role === UserRegisterRequestRoleEnum.Admin;
-
-      const baseRequired = {
-        name: formData.name,
-        role: formData.role,
-        gender: formData.gender,
-        birthDate: new Date(formData.birthDate),
-        address: formData.address,
-      } satisfies Pick<
-        UserRegisterRequest,
-        "name" | "role" | "gender" | "birthDate" | "address"
-      >;
-
-      const userRegisterRequest: UserRegisterRequest = isAdmin
-        ? {
-            ...baseRequired,
-
-            primaryDiagnosis: undefined,
-            educationBeforeOnset: undefined,
-            previousDiagnosis: undefined,
-            diagnosisYearMonth: undefined,
-            diagnosisHospital: undefined,
-            chiefComplaint: undefined,
-            currentHospital: undefined,
-            currentResidence: undefined,
-            medicalCoverage: undefined,
-
-            specialCaseRegistered: undefined,
-            specialCaseRegisteredDate: undefined,
-
-            disabilityRegistered: undefined,
-            disabilityStatus: undefined,
-            disabilityType: undefined,
-            disabilitySeverity: undefined,
-
-            socialWelfareServiceLabels: [],
-          }
-        : cleanEmptyStringToUndefined<UserRegisterRequest>({
-            ...baseRequired,
-
-            primaryDiagnosis: formData.primaryDiagnosis,
-            educationBeforeOnset: formData.educationBeforeOnset,
-            previousDiagnosis: formData.previousDiagnosis,
-            diagnosisYearMonth: formData.diagnosisYearMonth,
-            diagnosisHospital: formData.diagnosisHospital,
-            chiefComplaint: formData.chiefComplaint,
-            currentHospital: formData.currentHospital,
-            currentResidence: formData.currentResidence,
-            medicalCoverage: formData.medicalCoverage,
-
-            specialCaseRegistered: formData.specialCaseRegistered,
-            specialCaseRegisteredDate: formData.specialCaseRegistered
-              ? formData.specialCaseRegisteredDate
-                ? new Date(formData.specialCaseRegisteredDate)
-                : undefined
-              : undefined,
-
-            disabilityRegistered: formData.disabilityRegistered,
-            disabilityStatus: formData.disabilityStatus,
-            disabilityType: formData.disabilityType,
-            disabilitySeverity: formData.disabilitySeverity,
-
-            socialWelfareServiceLabels:
-              formData.socialWelfareServiceLabels ?? [],
-          });
+      const userRegisterRequest = buildRegisterRequest();
 
       const res = await userApi.register({ userRegisterRequest });
       const nextToken = res.data?.accessToken;
@@ -275,7 +357,7 @@ export default function RegisterPage() {
         updateOAuthToken(nextToken);
         const payload = decodeJwtPayload<{ role?: string }>(nextToken);
 
-        if (payload?.role === "ADMIN") {
+        if (payload?.role === "ADMIN" || payload?.role === "CARE_MANAGER") {
           router.push("/admin/users");
         } else {
           router.push("/register/questions");
@@ -292,14 +374,50 @@ export default function RegisterPage() {
         <div>
           <h1 className="text-3xl font-bold">회원가입</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            돌봄일기를 시작하기 위해 정보를 입력해주세요
+            돌봄일기 서비스 이용을 위해 가입 유형을 선택한 뒤 필요한 정보를
+            입력해주세요
           </p>
+        </div>
+
+        {/* 역할 선택 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {ROLE_OPTIONS.map((option) => {
+            const selected = selectedRole === option.value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setSelectedRole(option.value)}
+                className={[
+                  "rounded-xl border p-4 text-left transition",
+                  selected
+                    ? "border-primary bg-primary/5 ring-1 ring-primary"
+                    : "border-border bg-background hover:border-primary/40",
+                ].join(" ")}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold">{option.label}</p>
+                  {selected && <Badge>선택됨</Badge>}
+                </div>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  {option.description}
+                </p>
+              </button>
+            );
+          })}
         </div>
 
         <Card className="border-0 shadow-lg">
           <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4">
             <div>
-              <p className="text-sm font-medium">기본 정보 및 환자 정보 입력</p>
+              <p className="text-sm font-medium">
+                {isUser
+                  ? "기본 정보 및 환자 정보 입력"
+                  : isCareManager
+                    ? "담당 관리자 회원가입"
+                    : "총괄 관리자 회원가입"}
+              </p>
               <p className="mt-1 text-xs text-destructive font-medium">
                 * 표시는 필수 입력 항목입니다.
               </p>
@@ -312,34 +430,6 @@ export default function RegisterPage() {
 
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-8">
-              <div className="flex items-center justify-between rounded-md bg-muted px-3 py-2">
-                <p className="text-xs text-muted-foreground">
-                  일반 사용자 또는 관리자 중 가입 유형을 선택할 수 있습니다.
-                </p>
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="isAdmin"
-                    className="bg-white"
-                    checked={isAdmin}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        role:
-                          checked === true
-                            ? UserRegisterRequestRoleEnum.Admin
-                            : UserRegisterRequestRoleEnum.User,
-                      }))
-                    }
-                  />
-                  <Label
-                    htmlFor="isAdmin"
-                    className="cursor-pointer font-normal text-xs"
-                  >
-                    관리자로 가입
-                  </Label>
-                </div>
-              </div>
-
               {/* 기본 정보 */}
               <section className="space-y-5">
                 <h2 className="text-lg font-bold">기본 정보</h2>
@@ -397,7 +487,6 @@ export default function RegisterPage() {
                   </Label>
 
                   <div className="flex gap-3">
-                    {/* 년 */}
                     <Select value={birthYear} onValueChange={setBirthYear}>
                       <SelectTrigger className="w-full h-9 px-3">
                         <SelectValue placeholder="년" />
@@ -408,7 +497,6 @@ export default function RegisterPage() {
                         sideOffset={4}
                         avoidCollisions={false}
                       >
-                        {" "}
                         {YEARS.map((y) => (
                           <SelectItem key={y} value={y}>
                             {y}년
@@ -417,7 +505,6 @@ export default function RegisterPage() {
                       </SelectContent>
                     </Select>
 
-                    {/* 월 */}
                     <Select value={birthMonth} onValueChange={setBirthMonth}>
                       <SelectTrigger className="w-full h-9 px-3">
                         <SelectValue placeholder="월" />
@@ -428,7 +515,6 @@ export default function RegisterPage() {
                         sideOffset={4}
                         avoidCollisions={false}
                       >
-                        {" "}
                         {MONTHS.map((m) => (
                           <SelectItem key={m} value={m}>
                             {m}월
@@ -437,7 +523,6 @@ export default function RegisterPage() {
                       </SelectContent>
                     </Select>
 
-                    {/* 일 */}
                     <Select value={birthDay} onValueChange={setBirthDay}>
                       <SelectTrigger className="w-full h-9 px-3">
                         <SelectValue placeholder="일" />
@@ -448,7 +533,6 @@ export default function RegisterPage() {
                         sideOffset={4}
                         avoidCollisions={false}
                       >
-                        {" "}
                         {DAYS.map((d) => (
                           <SelectItem key={d} value={d}>
                             {d}일
@@ -470,8 +554,8 @@ export default function RegisterPage() {
                 </div>
               </section>
 
-              {/* 환자 정보 (USER Only) */}
-              {!isAdmin && (
+              {/* 사용자 전용: 환자 정보 */}
+              {isUser && (
                 <section className="space-y-5 pt-4 border-t">
                   <div className="flex flex-row items-center space-x-2">
                     <h2 className="text-lg font-bold">환자 정보</h2>
@@ -506,7 +590,7 @@ export default function RegisterPage() {
                           educationBeforeOnset: e.target.value,
                         }))
                       }
-                      placeholder="예: 대학교 4학년 재학, 고졸 등"
+                      placeholder="예: 대학교 졸업, 고등학교 졸업 등"
                     />
                   </div>
 
@@ -597,11 +681,10 @@ export default function RegisterPage() {
                           currentResidence: e.target.value,
                         }))
                       }
-                      placeholder="예: 본가, 그룹홈, 자립주택 등"
+                      placeholder="예: 자택, 본가, 그룹홈, 자립주택 등"
                     />
                   </div>
 
-                  {/* 의료보장 */}
                   <div className="space-y-2 pt-2">
                     <Label>의료보장</Label>
                     <RadioGroup
@@ -638,7 +721,6 @@ export default function RegisterPage() {
                     </RadioGroup>
                   </div>
 
-                  {/* 산정 특례 */}
                   <div className="space-y-3">
                     <Label>산정특례</Label>
                     <div className="flex items-center space-x-2">
@@ -679,13 +761,11 @@ export default function RegisterPage() {
                               specialCaseRegisteredDate: e.target.value,
                             }))
                           }
-                          placeholder="등록일을 입력하세요"
                         />
                       </div>
                     )}
                   </div>
 
-                  {/* 장애 */}
                   <div className="space-y-3">
                     <Label>장애 등급</Label>
 
@@ -783,7 +863,7 @@ export default function RegisterPage() {
                                     disabilityType: e.target.value,
                                   }))
                                 }
-                                placeholder="예: 지체, 시각, 청각 등"
+                                placeholder="예: 정신장애, 지체장애 등"
                               />
                             </div>
 
@@ -828,7 +908,6 @@ export default function RegisterPage() {
                     )}
                   </div>
 
-                  {/* 사회복지서비스 (복수 선택) */}
                   <div className="space-y-3">
                     <Label>사회복지서비스</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -860,6 +939,88 @@ export default function RegisterPage() {
                       )}
                     </div>
                   </div>
+
+                  <div className="space-y-5 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg font-bold">담당 관리자</h2>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-muted-foreground text-[11px] font-semibold text-white cursor-pointer"
+                              aria-label="담당 관리자 안내"
+                            >
+                              ?
+                            </button>
+                          </TooltipTrigger>
+
+                          <TooltipContent
+                            side="right"
+                            align="center"
+                            sideOffset={0}
+                            className="max-w-xs rounded-md bg-muted px-3 py-2 text-left text-xs text-foreground"
+                          >
+                            담당 관리자를 지정하면 해당 관리자가 사용자의 일기
+                            <br />
+                            작성 내역 등 돌봄 기록을 확인할 수 있습니다.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <span className="text-xs text-muted-foreground">
+                        (선택)
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Input
+                        id="managerName"
+                        value={
+                          selectedManagerName
+                            ? `${selectedManagerName}${selectedManagerEmail ? ` (${selectedManagerEmail})` : ""}`
+                            : ""
+                        }
+                        readOnly
+                        placeholder="담당 관리자를 선택해주세요"
+                        className="bg-muted"
+                      />
+
+                      <Button
+                        type="button"
+                        onClick={() => setManagerModalOpen(true)}
+                      >
+                        담당 관리자 검색
+                      </Button>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* 담당 관리자 / 총괄 관리자 전용 */}
+              {isManagerRole && (
+                <section className="space-y-5 pt-4 border-t">
+                  <div className="flex flex-row items-center space-x-2">
+                    <h2 className="text-lg font-bold">관리자 정보</h2>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="adminCode">
+                      인증코드 <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="adminCode"
+                      value={formData.adminCode ?? ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          adminCode: e.target.value,
+                        }))
+                      }
+                      placeholder="인증코드를 입력하세요"
+                    />
+                  </div>
                 </section>
               )}
 
@@ -887,6 +1048,19 @@ export default function RegisterPage() {
           </CardContent>
         </Card>
       </div>
+
+      <CareManagerSearchModal
+        open={managerModalOpen}
+        onOpenChange={setManagerModalOpen}
+        onSelect={(manager) => {
+          setFormData((prev) => ({
+            ...prev,
+            managerId: manager.managerId,
+          }));
+          setSelectedManagerName(manager.name);
+          setSelectedManagerEmail(manager.email);
+        }}
+      />
     </div>
   );
 }
