@@ -9,7 +9,13 @@ import { UsageManagement } from "@/components/admin/usage-management";
 import { adminUserApi } from "@/lib/api/client";
 import type { AdminUserDto } from "@/generated-api";
 
+import { getOAuthSession } from "@/lib/auth-storage";
+import { decodeJwtPayload } from "@/lib/jwt";
+
 export default function AdminUsersPage() {
+  type AuthRole = "ADMIN" | "CARE_MANAGER" | "USER";
+
+  const [role, setRole] = useState<AuthRole | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("users");
   const [users, setUsers] = useState<AdminUserDto[]>([]);
@@ -30,10 +36,21 @@ export default function AdminUsersPage() {
     run();
   }, []);
 
+  useEffect(() => {
+    const { token } = getOAuthSession();
+    const payload = token ? decodeJwtPayload<{ role?: AuthRole }>(token) : null;
+
+    setRole(payload?.role ?? null);
+  }, []);
+
   const selectedUser = useMemo(
     () => users.find((u) => u.userId === selectedUserId),
     [users, selectedUserId],
   );
+
+  const title = role === "CARE_MANAGER" ? "돌봄 대상" : "사용자 관리";
+  const subtitle =
+    role === "CARE_MANAGER" ? "담당 사용자 목록" : "전체 사용자 목록";
 
   return (
     <div className="flex h-screen flex-col bg-white">
@@ -44,10 +61,8 @@ export default function AdminUsersPage() {
           <>
             <div className="w-80 border-r border-border bg-white">
               <div className="border-b border-border px-6 py-4">
-                <h1 className="text-xl font-bold">사용자 관리</h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  전체 사용자 목록
-                </p>
+                <h1 className="text-xl font-bold">{title}</h1>
+                <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
               </div>
 
               {loading ? (
