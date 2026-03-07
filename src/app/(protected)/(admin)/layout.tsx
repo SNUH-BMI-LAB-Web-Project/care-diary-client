@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { getOAuthSession } from "@/lib/auth-storage";
 import { decodeJwtPayload } from "@/lib/jwt";
 
-type JwtPayload = { role?: "ADMIN" | "USER" };
+type JwtPayload = { role?: "ADMIN" | "CARE_MANAGER" | "USER" };
 
 export default function AdminLayout({
   children,
@@ -18,7 +18,9 @@ export default function AdminLayout({
     const { token } = getOAuthSession();
     const payload = token ? decodeJwtPayload<JwtPayload>(token) : null;
 
-    if (payload?.role !== "ADMIN") {
+    const role = payload?.role;
+
+    if (role !== "ADMIN" && role !== "CARE_MANAGER") {
       router.replace("/home");
     }
   }, [router]);
