@@ -60,7 +60,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { HelpCircle } from "lucide-react";
 
 type RegisterRole = UserRegisterRequestRoleEnum;
 
@@ -78,22 +77,18 @@ type RegisterFormData = Omit<
 const ROLE_OPTIONS: {
   value: RegisterRole;
   label: string;
-  description: string;
 }[] = [
   {
     value: UserRegisterRequestRoleEnum.User,
     label: "사용자",
-    description: "환자 정보 입력 후 설문으로 이동",
   },
   {
     value: UserRegisterRequestRoleEnum.CareManager,
     label: "담당 관리자",
-    description: "담당 사용자만 관리 가능한 관리자",
   },
   {
     value: UserRegisterRequestRoleEnum.Admin,
     label: "총괄 관리자",
-    description: "전체 관리자/사용자 관리 가능",
   },
 ];
 
@@ -397,12 +392,9 @@ export default function RegisterPage() {
                 ].join(" ")}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold">{option.label}</p>
+                  <p className="text-sm font-semibold">{option.label}</p>
                   {selected && <Badge>선택됨</Badge>}
                 </div>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  {option.description}
-                </p>
               </button>
             );
           })}
