@@ -51,7 +51,7 @@ interface UserDetailProps {
   userId: string;
 }
 
-const USE_MOCK_WORD_CLOUD = true;
+const USE_MOCK_WORD_CLOUD = false;
 
 const MOCK_WORD_CLOUD: AdminUserWordCloudResponse = {
   userId: "mock-user",
